@@ -1,0 +1,6 @@
+{
+  "name": "StudyZone MJCET",
+  "description": "Mobile-first academic file management platform exclusively designed for MJCET students.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

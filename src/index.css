@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "EB Garamond", Garamond, Cambria, Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-content-primary: #0f172a;
+  --color-content-secondary: #475569;
+  --color-content-muted: #64748b;
+  --color-border-subtle: #e2e8f0;
+  --color-bg-main: #f8fafc;
+}
+
+@layer base {
+  :root {
+    --font-serif: "EB Garamond", Garamond, Cambria, Georgia, serif;
+    --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-poppins: "Poppins", system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #F8FAFC;
+    background-image: 
+      /* Increased alpha values from 0.45/0.65 to 0.85/0.92 to fade the image */
+      linear-gradient(to bottom, rgba(248, 250, 252, 0.85), rgba(248, 250, 252, 0.92)),
+      url('https://i.pinimg.com/736x/d9/1b/90/d91b905ce5935f0d1b84a2e3d26277d9.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    color: #0F172A;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, .font-academic, .font-serif-brand {
+    font-family: var(--font-serif);
+  }
+
+  .font-poppins {
+    font-family: var(--font-poppins);
+  }
+}
+
+/* Color & theme utility tokens */
+.text-content-primary {
+  color: #0F172A;
+}
+.text-content-secondary {
+  color: #475569;
+}
+.text-content-muted {
+  color: #64748B;
+}
+.border-border-subtle {
+  border-color: #E2E8F0;
+}
+.bg-brand-600 {
+  background-color: #2563EB;
+}
+.text-brand-600 {
+  color: #2563EB;
+}
+.hover\:text-brand-600:hover {
+  color: #2563EB;
+}
+.hover\:text-brand-700:hover {
+  color: #1D4ED8;
+}
+.bg-bg-main {
+  background-color: #F8FAFC;
+}
+
+/* Custom minimal scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Utility to hide scrollbars for horizontal filter rows */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Focus styles for keyboard accessibility */
+*:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+}
+
+/* Print styles for PDF previews */
+@media print {
+  body {
+    background: white;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
