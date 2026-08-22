@@ -97,6 +97,7 @@ const Thumbnail = React.memo(({ pageNumber, active, rootRef, onSelect }: Thumbna
 const pageNumbers = (count: number) => Array.from({ length: count }, (_, index) => index + 1);
 const pageWindow = (center: number, count: number, radius = 3) =>
   new Set(pageNumbers(count).filter((page) => Math.abs(page - center) <= radius));
+const clampZoom = (zoom: number) => Math.min(1.8, Math.max(0.6, zoom));
 
 export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder, folderHierarchy = [] }) => {
   const viewerRootRef = useRef<HTMLDivElement>(null);
@@ -113,6 +114,19 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [pdfError, setPdfError] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const zoomLevelRef = useRef(zoomLevel);
+  const touchPointsRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchStartRef = useRef<{ distance: number; zoom: number } | null>(null);
+  const panStartRef = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
+
+  useEffect(() => {
+    zoomLevelRef.current = zoomLevel;
+  }, [zoomLevel]);
+
+  useEffect(() => {
+    setIsTouchDevice(window.matchMedia('(pointer: coarse)').matches);
+  }, []);
 
   const registerPage = useCallback((pageNumber: number, element: HTMLDivElement | null) => {
     pageRefs.current[pageNumber] = element;
@@ -121,12 +135,61 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    const updateWidth = () => setPageWidth(Math.max(280, Math.min(860, viewport.clientWidth - 32)));
+    const updateWidth = () => setPageWidth(Math.max(1, Math.min(860, viewport.clientWidth - 32)));
     updateWidth();
     const observer = new ResizeObserver(updateWidth);
     observer.observe(viewport);
     return () => observer.disconnect();
   }, [isSidebarOpen]);
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isTouchDevice) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    touchPointsRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+    if (touchPointsRef.current.size === 2) {
+      const points = [...touchPointsRef.current.values()];
+      pinchStartRef.current = {
+        distance: Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y),
+        zoom: zoomLevelRef.current,
+      };
+      panStartRef.current = null;
+    } else {
+      panStartRef.current = {
+        x: event.clientX,
+        y: event.clientY,
+        scrollLeft: event.currentTarget.scrollLeft,
+        scrollTop: event.currentTarget.scrollTop,
+      };
+    }
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isTouchDevice || !touchPointsRef.current.has(event.pointerId)) return;
+    event.preventDefault();
+    touchPointsRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+    if (touchPointsRef.current.size === 2 && pinchStartRef.current) {
+      const points = [...touchPointsRef.current.values()];
+      const distance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+      if (pinchStartRef.current.distance > 0) {
+        setZoomLevel(clampZoom(pinchStartRef.current.zoom * distance / pinchStartRef.current.distance));
+      }
+      return;
+    }
+
+    if (panStartRef.current) {
+      event.currentTarget.scrollLeft = panStartRef.current.scrollLeft - (event.clientX - panStartRef.current.x);
+      event.currentTarget.scrollTop = panStartRef.current.scrollTop - (event.clientY - panStartRef.current.y);
+    }
+  };
+
+  const handlePointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isTouchDevice) return;
+    touchPointsRef.current.delete(event.pointerId);
+    if (touchPointsRef.current.size < 2) pinchStartRef.current = null;
+    if (touchPointsRef.current.size === 0) panStartRef.current = null;
+  };
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -194,6 +257,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
     pageRefs.current = {};
     currentPageRef.current = 1;
     setCurrentPage(1);
+    setZoomLevel(1);
     setPageCount(resource.pageCount || 1);
     setRenderedPages(new Set([1, 2, 3]));
     setPdfError(false);
@@ -231,7 +295,16 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
             {pageNumbers(pageCount).map((page) => <Thumbnail key={page} pageNumber={page} active={currentPage === page} rootRef={thumbnailViewportRef} onSelect={scrollToPage} />)}
           </div>
         </aside>
-        <div ref={viewportRef} id="pdf-scroll-viewport" className="flex-1 overflow-auto bg-slate-200/70 p-4 sm:p-8">
+        <div
+          ref={viewportRef}
+          id="pdf-scroll-viewport"
+          className="flex-1 min-w-0 overflow-auto overscroll-contain bg-slate-200/70 p-4 sm:p-8"
+          style={{ touchAction: isTouchDevice ? 'none' : undefined }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+        >
           {!pdfError && pageNumbers(pageCount).map((page) => <PageShell key={page} pageNumber={page} width={pageWidth * zoomLevel} renderPage={renderedPages.has(page)} register={registerPage} />)}
         </div>
         <PdfInfoPanel resource={resource} subject={subject} folder={folder} folderHierarchy={folderHierarchy} isOpen={isInfoOpen} onClose={() => setIsInfoOpen(false)} />
