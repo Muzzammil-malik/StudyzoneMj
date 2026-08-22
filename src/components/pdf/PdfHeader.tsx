@@ -9,6 +9,8 @@ import { downloadResource } from '../../services/fileService';
 interface PdfHeaderProps {
   resource: Resource;
   zoomLevel: number;
+  minZoom: number;
+  maxZoom: number;
   onZoomChange: (newZoom: number) => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
@@ -20,6 +22,8 @@ interface PdfHeaderProps {
 export const PdfHeader: React.FC<PdfHeaderProps> = ({
   resource,
   zoomLevel,
+  minZoom,
+  maxZoom,
   onZoomChange,
   isFullscreen,
   onToggleFullscreen,
@@ -109,8 +113,8 @@ export const PdfHeader: React.FC<PdfHeaderProps> = ({
       <div className="hidden md:flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-lg p-0.5 text-xs text-slate-600">
         <button
           type="button"
-          onClick={() => onZoomChange(Math.max(0.6, zoomLevel - 0.15))}
-          disabled={zoomLevel <= 0.6}
+          onClick={() => onZoomChange(Math.max(minZoom, zoomLevel - 0.15))}
+          disabled={zoomLevel <= minZoom}
           aria-label="Zoom out"
           className="p-1.5 hover:bg-white hover:text-slate-900 rounded disabled:opacity-40 transition-colors cursor-pointer"
         >
@@ -121,8 +125,8 @@ export const PdfHeader: React.FC<PdfHeaderProps> = ({
         </span>
         <button
           type="button"
-          onClick={() => onZoomChange(Math.min(1.8, zoomLevel + 0.15))}
-          disabled={zoomLevel >= 1.8}
+          onClick={() => onZoomChange(Math.min(maxZoom, zoomLevel + 0.15))}
+          disabled={zoomLevel >= maxZoom}
           aria-label="Zoom in"
           className="p-1.5 hover:bg-white hover:text-slate-900 rounded disabled:opacity-40 transition-colors cursor-pointer"
         >
