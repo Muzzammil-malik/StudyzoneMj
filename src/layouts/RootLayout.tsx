@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/navigation/Navbar';
 import { Footer } from '../components/navigation/Footer';
@@ -13,6 +13,10 @@ export const RootLayout: React.FC = () => {
   const location = useLocation();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const isPdfViewerPage = location.pathname.startsWith('/resource/');
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [location.key]);
 
   const {
     query,
