@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Mail, Linkedin, Heart, BookOpen, ExternalLink, ShieldCheck } from 'lucide-react';
+import { Mail, Linkedin, Heart, ExternalLink, ShieldCheck } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa6';
 import { contentService } from '../../services/contentService';
 import { AdminSettings } from '../../types/admin';
@@ -25,8 +25,8 @@ export const Footer: React.FC<FooterProps> = ({ onSelectSubject, onOpenFeedback 
           {/* Col 1: Brand & Slogan */}
           <div className="md:col-span-5 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white">
-                <BookOpen className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-lg overflow-hidden">
+                <img src="/assets/SZ.png" alt="StudyZone logo" className="w-full h-full object-cover" />
               </div>
               <span className="font-academic text-2xl font-bold tracking-tight text-content-primary">
                 {settings.websiteName || 'StudyZone MJCET'}
