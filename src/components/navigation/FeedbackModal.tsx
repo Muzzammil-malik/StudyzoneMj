@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, MessageSquare, Send, CheckCircle2, Heart } from 'lucide-react';
 import { useToast } from '../ui/Toast';
+import { contentService } from '../../services/contentService';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -18,12 +19,19 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
 
     setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      await contentService.submitFeedback({
+        name: studentContact.trim() || 'Anonymous student',
+        email: studentContact.includes('@') ? studentContact.trim() : '',
+        type: feedbackType === 'request_material' ? 'material_request' : feedbackType === 'bug_or_issue' ? 'correction' : 'feedback',
+        subjectRequested: subjectOrTopic.trim() || undefined,
+        message: message.trim(),
+      });
       setIsSubmitting(false);
       setIsSubmitted(true);
       showToast('Thank you! Your feedback has been recorded.', 'success');
@@ -34,7 +42,11 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
         setStudentContact('');
         onClose();
       }, 1400);
-    }, 400);
+    } catch (error) {
+      console.error('Feedback submission failed', error);
+      setIsSubmitting(false);
+      showToast('Unable to submit feedback. Please try again.', 'error');
+    }
   };
 
   return (

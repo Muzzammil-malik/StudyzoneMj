@@ -51,6 +51,7 @@ export const AdminResourcesPage: React.FC = () => {
   const [resourceToDelete, setResourceToDelete] = useState<Resource | null>(null);
   const [previewResource, setPreviewResource] = useState<Resource | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -66,7 +67,6 @@ export const AdminResourcesPage: React.FC = () => {
     fileSizeMB: 2.5,
     tagsInput: 'Lecture Notes, MJCET',
     status: 'published' as 'published' | 'draft',
-    fileUrl: 'https://raw.githubusercontent.com/mozilla/pdf.js/master/web/compressed.tracemonkey-pldi-09.pdf',
   });
 
   const loadData = async () => {
@@ -115,6 +115,7 @@ export const AdminResourcesPage: React.FC = () => {
       : matchingFolders[0];
 
     setEditingResource(null);
+    setSelectedFile(null);
     setFormData({
       name: '',
       description: '',
@@ -128,13 +129,13 @@ export const AdminResourcesPage: React.FC = () => {
       fileSizeMB: 3.2,
       tagsInput: 'Lecture Notes, MJCET',
       status: 'published',
-      fileUrl: 'https://raw.githubusercontent.com/mozilla/pdf.js/master/web/compressed.tracemonkey-pldi-09.pdf',
     });
     setIsFormOpen(true);
   };
 
   const handleOpenEdit = (res: Resource) => {
     setEditingResource(res);
+    setSelectedFile(null);
     setFormData({
       name: res.name,
       description: res.description || '',
@@ -148,7 +149,6 @@ export const AdminResourcesPage: React.FC = () => {
       fileSizeMB: res.fileSize ? +(res.fileSize / (1024 * 1024)).toFixed(2) : 2.5,
       tagsInput: (res.tags || []).join(', '),
       status: res.status || 'published',
-      fileUrl: res.fileUrl || 'https://raw.githubusercontent.com/mozilla/pdf.js/master/web/compressed.tracemonkey-pldi-09.pdf',
     });
     setIsFormOpen(true);
   };
@@ -189,16 +189,26 @@ export const AdminResourcesPage: React.FC = () => {
         academicYear: formData.academicYear.trim(),
         pageCount: Number(formData.pageCount) || 10,
         fileSize: Number(formData.fileSizeMB) * 1024 * 1024,
-        fileUrl: formData.fileUrl,
         tags: parsedTags,
         status: formData.status,
       };
+
+      if (!editingResource && !selectedFile) {
+        throw new Error('Please choose a PDF file to upload.');
+      }
+
+      if (editingResource && selectedFile) {
+        await contentService.replaceResourceFile(editingResource.id, selectedFile);
+      }
 
       if (editingResource) {
         await contentService.updateResource(editingResource.id, payload);
         toast.success(`Updated resource "${payload.name}"`);
       } else {
-        await contentService.createResource(payload);
+        await contentService.uploadResource(selectedFile as File, {
+          ...payload,
+          title: payload.name,
+        });
         toast.success(`Uploaded and published "${payload.name}"`);
       }
 
@@ -498,19 +508,26 @@ export const AdminResourcesPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveResource} className="p-6 space-y-4 overflow-y-auto flex-1">
-              {/* File Dropzone Mockup */}
               {!editingResource && (
-                <div className="p-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-center space-y-2 hover:border-blue-400 transition-colors">
+                <label className="block p-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-center space-y-2 hover:border-blue-400 transition-colors cursor-pointer">
                   <UploadCloud className="w-8 h-8 text-blue-500 mx-auto" />
                   <div>
                     <p className="text-xs font-semibold text-slate-800">
-                      Drop PDF here, or select from file manager
+                      {selectedFile ? selectedFile.name : 'Select a PDF from your file manager'}
                     </p>
                     <p className="text-[11px] text-slate-400">
                       Standard syllabus, lecture slides, question banks (Max 50MB)
                     </p>
                   </div>
-                </div>
+                  <input type="file" accept="application/pdf,.pdf" className="sr-only" onChange={(event) => setSelectedFile(event.target.files?.[0] || null)} />
+                </label>
+              )}
+              {editingResource && (
+                <label className="block p-3 border border-slate-200 rounded-xl bg-slate-50/50 cursor-pointer">
+                  <span className="text-xs font-semibold text-slate-700">Replace PDF (optional)</span>
+                  <input type="file" accept="application/pdf,.pdf" className="block w-full mt-2 text-xs" onChange={(event) => setSelectedFile(event.target.files?.[0] || null)} />
+                  {selectedFile && <span className="block text-[11px] text-slate-500 mt-1">Selected: {selectedFile.name}</span>}
+                </label>
               )}
 
               <div>

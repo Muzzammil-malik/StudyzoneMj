@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { AdminSidebar } from '../components/admin/AdminSidebar';
 import { AdminTopbar } from '../components/admin/AdminTopbar';
 import { contentService } from '../services/contentService';
+import { supabase } from '../lib/supabase';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 interface Toast {
@@ -33,6 +34,36 @@ export const AdminLayout: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [unreadFeedbackCount, setUnreadFeedbackCount] = useState(0);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [isSigningIn, setIsSigningIn] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (mounted && session) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
+        setIsAdmin(profile?.role === 'admin');
+      }
+      if (mounted) setSessionReady(true);
+    };
+    loadSession();
+    const { data: listener } = supabase.auth.onAuthStateChange(() => { loadSession(); });
+    return () => { mounted = false; listener.subscription.unsubscribe(); };
+  }, []);
+
+  const signIn = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsSigningIn(true);
+    setAuthError('');
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) setAuthError('Unable to sign in with those credentials.');
+    setIsSigningIn(false);
+  };
 
   const fetchUnreadFeedback = async () => {
     try {
@@ -45,7 +76,22 @@ export const AdminLayout: React.FC = () => {
 
   useEffect(() => {
     fetchUnreadFeedback();
-  }, []);
+  }, [isAdmin]);
+
+  if (!sessionReady) return <div className="min-h-screen bg-slate-50 flex items-center justify-center text-sm text-slate-500">Checking admin session...</div>;
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <form onSubmit={signIn} className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+          <div><h1 className="font-serif text-2xl font-bold text-slate-900">Admin sign in</h1><p className="text-xs text-slate-500 mt-1">Use an authorized StudyZone administrator account.</p></div>
+          <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
+          <input required type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
+          {authError && <p className="text-xs text-rose-600">{authError}</p>}
+          <button disabled={isSigningIn} className="w-full py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold disabled:opacity-50">{isSigningIn ? 'Signing in...' : 'Sign in'}</button>
+        </form>
+      </div>
+    );
+  }
 
   const addToast = (type: 'success' | 'error' | 'info', message: string) => {
     const id = `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;

@@ -4,7 +4,7 @@ import { FileText, Download, Share2, Bookmark, Eye } from 'lucide-react';
 import { Resource } from '../../types/resource';
 import { useIsBookmarked } from '../../hooks/useBookmarks';
 import { useToast } from '../ui/Toast';
-import { triggerPdfDownload } from '../../services/samplePdfGenerator';
+import { downloadResource } from '../../services/fileService';
 
 interface FileCardProps {
   resource: Resource;
@@ -47,11 +47,16 @@ export const FileCard: React.FC<FileCardProps> = ({ resource, subjectName }) => 
     }
   };
 
-  const handleDownload = (e: React.MouseEvent) => {
+  const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    triggerPdfDownload(resource);
-    showToast(`Downloading "${resource.name}"`, 'info');
+    try {
+      await downloadResource(resource);
+      showToast(`Downloading "${resource.name}"`, 'info');
+    } catch (error) {
+      console.error('PDF download failed', error);
+      showToast('Unable to download this PDF.', 'error');
+    }
   };
 
   const handleBookmarkToggle = async (e: React.MouseEvent) => {
@@ -183,11 +188,16 @@ export const FileRow: React.FC<FileCardProps> = ({ resource, subjectName }) => {
     }
   };
 
-  const handleDownload = (e: React.MouseEvent) => {
+  const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    triggerPdfDownload(resource);
-    showToast(`Downloading "${resource.name}"`, 'info');
+    try {
+      await downloadResource(resource);
+      showToast(`Downloading "${resource.name}"`, 'info');
+    } catch (error) {
+      console.error('PDF download failed', error);
+      showToast('Unable to download this PDF.', 'error');
+    }
   };
 
   const handleBookmarkToggle = async (e: React.MouseEvent) => {

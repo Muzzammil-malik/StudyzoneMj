@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Resource } from '../../types/resource';
 import { Subject } from '../../types/subject';
 import { Folder } from '../../types/folder';
 import { PdfHeader } from './PdfHeader';
 import { PdfInfoPanel } from './PdfInfoPanel';
-import { PdfDocumentCanvas } from './PdfDocumentCanvas';
-import { generateAcademicDocContent } from '../../services/samplePdfGenerator';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PdfViewerProps {
@@ -26,11 +24,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
 
-  const docContent = useMemo(() => {
-    return generateAcademicDocContent(resource, subject || undefined, folder || undefined);
-  }, [resource, subject, folder]);
-
-  const totalPages = docContent.totalPages;
+  const totalPages = resource.pageCount || 1;
 
   // Keyboard navigation for page flip (ArrowLeft / ArrowRight)
   useEffect(() => {
@@ -81,10 +75,10 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
           id="pdf-scroll-viewport"
           className="flex-1 overflow-y-auto p-4 sm:p-8 flex flex-col items-center justify-start relative"
         >
-          <PdfDocumentCanvas
-            content={docContent}
-            currentPage={currentPage}
-            zoomLevel={zoomLevel}
+          <iframe
+            title={resource.title || resource.name}
+            src={`${resource.fileUrl}#page=${currentPage}&zoom=${Math.round(zoomLevel * 100)}`}
+            className="w-full max-w-5xl min-h-[75vh] bg-white border border-slate-200 shadow-sm"
           />
         </div>
 

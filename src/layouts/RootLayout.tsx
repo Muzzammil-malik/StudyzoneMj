@@ -8,13 +8,6 @@ import { useGlobalSearch } from '../hooks/useGlobalSearch';
 import { ToastProvider } from '../components/ui/Toast';
 import { AmbientBackground } from '../components/ui/AmbientBackground';
 
-const subjectSlugMap: Record<string, string> = {
-  'engineering-physics': 'subj-physics',
-  'programming-for-problem-solving': 'subj-pps',
-  'basic-electrical-engineering': 'subj-bee',
-  'matrices-and-differential-calculus': 'subj-discrete-math',
-};
-
 export const RootLayout: React.FC = () => {
   const navigate = useNavigate();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -33,8 +26,7 @@ export const RootLayout: React.FC = () => {
   } = useGlobalSearch();
 
   const handleSelectSubject = (subjectIdOrSlug: string) => {
-    const targetId = subjectSlugMap[subjectIdOrSlug] || subjectIdOrSlug;
-    navigate(`/subject/${targetId}`);
+    navigate(`/subject/${subjectIdOrSlug}`);
   };
 
   return (

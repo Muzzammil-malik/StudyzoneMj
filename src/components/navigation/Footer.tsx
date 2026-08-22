@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, Linkedin, Heart, BookOpen, ExternalLink, ShieldCheck, Lock } from 'lucide-react';
+import { contentService } from '../../services/contentService';
+import { AdminSettings } from '../../types/admin';
+import { useSubjects } from '../../hooks/useSubjects';
 
 interface FooterProps {
   onSelectSubject?: (subjectId: string) => void;
@@ -8,6 +11,13 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onSelectSubject, onOpenFeedback }) => {
+  const [settings, setSettings] = useState<Partial<AdminSettings>>({});
+  const { subjects } = useSubjects();
+
+  useEffect(() => {
+    contentService.getAdminSettings().then(setSettings).catch((error) => console.error('Unable to load footer settings', error));
+  }, []);
+
   return (
     <footer id="main-footer" className="mt-20 border-t border-border-subtle bg-white text-content-primary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
@@ -19,7 +29,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectSubject, onOpenFeedback 
                 <BookOpen className="w-4 h-4" />
               </div>
               <span className="font-academic text-2xl font-bold tracking-tight text-content-primary">
-                StudyZone MJCET
+                {settings.websiteName || 'StudyZone MJCET'}
               </span>
             </div>
 
@@ -28,7 +38,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectSubject, onOpenFeedback 
             </p>
 
             <p className="text-xs text-content-muted leading-relaxed max-w-sm">
-              An independent, student-first digital library crafted for Muffakham Jah College of Engineering & Technology. Fast, zero ads, no login barrier.
+              {settings.footerText || 'An independent, student-first digital library crafted for Muffakham Jah College of Engineering & Technology.'}
             </p>
 
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 text-xs text-content-secondary font-medium">
@@ -43,42 +53,17 @@ export const Footer: React.FC<FooterProps> = ({ onSelectSubject, onOpenFeedback 
               Academic Library
             </h4>
             <ul className="space-y-2 text-sm text-content-secondary">
-              <li>
-                <button
-                  type="button"
-                  onClick={() => onSelectSubject?.('engineering-physics')}
-                  className="hover:text-brand-600 transition-colors text-left cursor-pointer"
-                >
-                  Engineering Physics
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => onSelectSubject?.('programming-for-problem-solving')}
-                  className="hover:text-brand-600 transition-colors text-left cursor-pointer"
-                >
-                  Programming for Problem Solving (PPS)
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => onSelectSubject?.('basic-electrical-engineering')}
-                  className="hover:text-brand-600 transition-colors text-left cursor-pointer"
-                >
-                  Basic Electrical Engineering
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => onSelectSubject?.('matrices-and-differential-calculus')}
-                  className="hover:text-brand-600 transition-colors text-left cursor-pointer"
-                >
-                  Matrices & Differential Calculus (M1)
-                </button>
-              </li>
+              {subjects.slice(0, 4).map((subject) => (
+                <li key={subject.id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelectSubject?.(subject.id)}
+                    className="hover:text-brand-600 transition-colors text-left cursor-pointer"
+                  >
+                    {subject.name}
+                  </button>
+                </li>
+              ))}
               <li>
                 <button
                   type="button"
@@ -107,23 +92,23 @@ export const Footer: React.FC<FooterProps> = ({ onSelectSubject, onOpenFeedback 
 
               <div className="space-y-2 text-xs text-content-secondary">
                 <a
-                  href="mailto:160425733134@mjcollege.ac.in"
+                  href={`mailto:${settings.contactEmail || ''}`}
                   className="flex items-center gap-2 hover:text-brand-600 transition-colors group"
                 >
                   <Mail className="w-3.5 h-3.5 text-content-muted group-hover:text-brand-600" />
-                  <span className="font-mono">160425733134@mjcollege.ac.in</span>
+                  <span className="font-mono">{settings.contactEmail || 'Contact email unavailable'}</span>
                 </a>
 
                 <a
-                  href="tel:+919849931637"
+                  href={`tel:${settings.contactPhone || ''}`}
                   className="flex items-center gap-2 hover:text-brand-600 transition-colors group"
                 >
                   <Phone className="w-3.5 h-3.5 text-content-muted group-hover:text-brand-600" />
-                  <span>+91 9849931637</span>
+                  <span>{settings.contactPhone || 'Contact phone unavailable'}</span>
                 </a>
 
                 <a
-                  href="https://www.linkedin.com/in/md-muzzammil-malik-737056364"
+                  href={settings.linkedInUrl || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-brand-600 hover:text-brand-700 font-medium transition-colors pt-1"

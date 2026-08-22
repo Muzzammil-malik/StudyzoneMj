@@ -4,7 +4,7 @@ import { ArrowLeft, Bookmark, Download, Share2, ZoomIn, ZoomOut, Maximize2, Mini
 import { Resource } from '../../types/resource';
 import { useIsBookmarked } from '../../hooks/useBookmarks';
 import { useToast } from '../ui/Toast';
-import { triggerPdfDownload } from '../../services/samplePdfGenerator';
+import { downloadResource } from '../../services/fileService';
 
 interface PdfHeaderProps {
   resource: Resource;
@@ -51,9 +51,14 @@ export const PdfHeader: React.FC<PdfHeaderProps> = ({
     }
   };
 
-  const handleDownload = () => {
-    triggerPdfDownload(resource);
-    showToast(`Downloading "${resource.name}"`, 'info');
+  const handleDownload = async () => {
+    try {
+      await downloadResource(resource);
+      showToast(`Downloading "${resource.name}"`, 'info');
+    } catch (error) {
+      console.error('PDF download failed', error);
+      showToast('Unable to download this PDF.', 'error');
+    }
   };
 
   const handleBookmarkToggle = async () => {

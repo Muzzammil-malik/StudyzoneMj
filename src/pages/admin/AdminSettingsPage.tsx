@@ -58,13 +58,6 @@ export const AdminSettingsPage: React.FC = () => {
     }
   };
 
-  const handleResetData = () => {
-    if (window.confirm('Reset all CMS local data back to initial development state? Any custom created subjects and folders will be restored.')) {
-      localStorage.clear();
-      window.location.reload();
-    }
-  };
-
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
@@ -178,21 +171,6 @@ export const AdminSettingsPage: React.FC = () => {
               </span>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl bg-rose-50/50 border border-rose-200/60">
-              <div>
-                <p className="font-semibold text-rose-900">Reset Local State</p>
-                <p className="text-rose-700 text-[11px]">
-                  Clear local cache and re-initialize all default MJCET courses and files
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleResetData}
-                className="px-3 py-1.5 bg-white hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-              >
-                Reset Data
-              </button>
-            </div>
           </div>
         </div>
 
