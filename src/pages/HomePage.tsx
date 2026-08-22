@@ -103,7 +103,7 @@ export const HomePage: React.FC = () => {
         {/* Top Pill Badge with Blue Bullet Dot */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#EFF6FF] text-[#2563EB] text-[11px] sm:text-xs font-semibold tracking-wider uppercase border border-blue-100 shadow-2xs">
           <span className="w-2 h-2 rounded-full bg-[#2563EB] shrink-0" />
-          <span>All resources As per the latest Autonomus R-25 Syllabus</span>
+          <span>All resources As per the latest Autonomus R25 Syllabus</span>
         </div>
 
         {/* Hero Title in Elegant EB Garamond Serif */}
