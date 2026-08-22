@@ -4,16 +4,14 @@ import { FaWhatsapp } from 'react-icons/fa6';
 import logo from '@/src/assets/SZ.png';
 import { contentService } from '../../services/contentService';
 import { AdminSettings } from '../../types/admin';
-import { useSubjects } from '../../hooks/useSubjects';
 
 interface FooterProps {
   onSelectSubject?: (subjectId: string) => void;
   onOpenFeedback: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onSelectSubject, onOpenFeedback }) => {
+export const Footer: React.FC<FooterProps> = () => {
   const [settings, setSettings] = useState<Partial<AdminSettings>>({});
-  const { subjects } = useSubjects();
 
   useEffect(() => {
     contentService.getAdminSettings().then(setSettings).catch((error) => console.error('Unable to load footer settings', error));
@@ -48,42 +46,13 @@ export const Footer: React.FC<FooterProps> = ({ onSelectSubject, onOpenFeedback 
             </div>
           </div>
 
-          {/* Col 2: Quick Links */}
-          <div className="md:col-span-3 space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-content-muted">
-              Academic Library
-            </h4>
-            <ul className="space-y-2 text-sm text-content-secondary">
-              {subjects.slice(0, 4).map((subject) => (
-                <li key={subject.id}>
-                  <button
-                    type="button"
-                    onClick={() => onSelectSubject?.(subject.id)}
-                    className="hover:text-brand-600 transition-colors text-left cursor-pointer"
-                  >
-                    {subject.name}
-                  </button>
-                </li>
-              ))}
-              <li>
-                <button
-                  type="button"
-                  onClick={onOpenFeedback}
-                  className="text-brand-600 hover:text-brand-700 font-medium transition-colors cursor-pointer"
-                >
-                  Request New Subject Notes →
-                </button>
-              </li>
-            </ul>
-          </div>
-
-          {/* Col 3: Creator Credentials */}
-          <div className="md:col-span-4 space-y-3">
+          {/* Creator Credentials */}
+          <div className="md:col-start-8 md:col-span-5 md:justify-self-end w-full space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-content-muted">
               Created & Maintained By
             </h4>
 
-            <div className="p-4 rounded-2xl bg-bg-main border border-border-subtle space-y-3">
+            <div className="p-4 rounded-2xl bg-bg-main border border-border-subtle space-y-2">
               <div className="flex items-center gap-1 text-sm font-semibold text-content-primary">
                 <span>Made with</span>
                 <Heart className="w-4 h-4 text-red-500 fill-red-500 mx-0.5 inline animate-pulse" />
@@ -129,8 +98,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectSubject, onOpenFeedback 
           
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>For the students ,by a student</span>
+              
             </div>
 
           </div>

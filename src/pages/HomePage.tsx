@@ -65,9 +65,6 @@ export const HomePage: React.FC = () => {
     ...categories,
   ];
 
-  const row1Categories = allCategoryPills.slice(0, 5);
-  const row2Categories = allCategoryPills.slice(5);
-
   const semesterOptions = [
     'All Semesters',
     ...(dynamicSemesters.length > 0
@@ -92,6 +89,27 @@ export const HomePage: React.FC = () => {
     return categoryName;
   };
 
+  const getCategoryOrderClass = (categoryName: string): string => {
+    switch (categoryName) {
+      case 'Lab Manuals':
+        return 'order-8 sm:order-5';
+      case 'Lab Records':
+        return 'order-5 sm:order-6';
+      case 'Assignments':
+        return 'order-6 sm:order-7';
+      case 'Syllabus':
+        return 'order-7 sm:order-8';
+      case 'Notes':
+        return 'order-2 sm:order-2';
+      case 'PYQs (Previous Years)':
+        return 'order-3 sm:order-3';
+      case 'Question Banks':
+        return 'order-4 sm:order-4';
+      default:
+        return 'order-1 sm:order-1';
+    }
+  };
+
   const selectedCategoryObj = categories.find((c) => c.name === selectedCategory);
 
   return (
@@ -101,9 +119,9 @@ export const HomePage: React.FC = () => {
       {/* ============================================================ */}
       <section className="text-center space-y-6 max-w-4xl mx-auto pt-2 sm:pt-6">
         {/* Top Pill Badge with Blue Bullet Dot */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#EFF6FF] text-[#2563EB] text-[11px] sm:text-xs font-semibold tracking-wider uppercase border border-blue-100 shadow-2xs">
+        <div className="inline-flex items-center gap-2 px-3.0 py-1 rounded-full bg-[#EFF6FF] text-[#2563EB] text-[10px] sm:text-xs font-semibold tracking-wider uppercase border border-blue-100 shadow-2xs">
           <span className="w-2 h-2 rounded-full bg-[#2563EB] shrink-0" />
-          <span>All resources As per the latest Autonomus R25 Syllabus</span>
+          <span>All resources As per the latest Autonomus Syllabus</span>
         </div>
 
         {/* Hero Title in Elegant EB Garamond Serif */}
@@ -154,9 +172,8 @@ export const HomePage: React.FC = () => {
         {/* RESOURCE CATEGORY PILLS (DYNAMICALLY ADAPTING TO CMS) */}
         {/* ============================================================ */}
         <div className="pt-3 space-y-2.5 max-w-3xl mx-auto">
-          {/* Row 1 */}
-          <div className="flex items-center justify-center gap-2 sm:gap-2.5 flex-wrap">
-            {row1Categories.map((cat) => {
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
+            {allCategoryPills.map((cat) => {
               const isSelected = selectedCategory === cat.name;
               const IconComponent = getCategoryIcon(cat.name, cat.iconName);
               return (
@@ -164,7 +181,7 @@ export const HomePage: React.FC = () => {
                   key={cat.id}
                   type="button"
                   onClick={() => handleCategoryClick(cat.name)}
-                  className={`inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full text-xs font-medium border transition-all cursor-pointer select-none shadow-2xs ${
+                  className={`${getCategoryOrderClass(cat.name)} inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full text-xs font-medium border transition-all cursor-pointer select-none shadow-2xs ${
                     isSelected
                       ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-xs'
                       : 'bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 border-slate-200/90 hover:border-slate-300'
@@ -180,35 +197,6 @@ export const HomePage: React.FC = () => {
               );
             })}
           </div>
-
-          {/* Row 2 */}
-          {row2Categories.length > 0 && (
-            <div className="flex items-center justify-center gap-2 sm:gap-2.5 flex-wrap">
-              {row2Categories.map((cat) => {
-                const isSelected = selectedCategory === cat.name;
-                const IconComponent = getCategoryIcon(cat.name, cat.iconName);
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => handleCategoryClick(cat.name)}
-                    className={`inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full text-xs font-medium border transition-all cursor-pointer select-none shadow-2xs ${
-                      isSelected
-                        ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-xs'
-                        : 'bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 border-slate-200/90 hover:border-slate-300'
-                    }`}
-                  >
-                    <IconComponent
-                      className={`w-3.5 h-3.5 ${
-                        isSelected ? 'text-white' : 'text-slate-500'
-                      }`}
-                    />
-                    <span>{cat.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
 
         {/* ============================================================ */}
