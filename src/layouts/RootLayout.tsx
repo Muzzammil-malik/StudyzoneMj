@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/navigation/Navbar';
 import { Footer } from '../components/navigation/Footer';
 import { GlobalSearchModal } from '../components/search/GlobalSearchModal';
@@ -10,7 +10,9 @@ import { AmbientBackground } from '../components/ui/AmbientBackground';
 
 export const RootLayout: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const isPdfViewerPage = location.pathname.startsWith('/resource/');
 
   const {
     query,
@@ -38,10 +40,12 @@ export const RootLayout: React.FC = () => {
           <Outlet context={{ openSearch }} />
         </main>
 
-        <Footer
-          onSelectSubject={handleSelectSubject}
-          onOpenFeedback={() => setIsFeedbackOpen(true)}
-        />
+        {!isPdfViewerPage && (
+          <Footer
+            onSelectSubject={handleSelectSubject}
+            onOpenFeedback={() => setIsFeedbackOpen(true)}
+          />
+        )}
 
         <GlobalSearchModal
           isOpen={isModalOpen}

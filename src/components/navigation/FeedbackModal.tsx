@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, MessageSquare, Send, CheckCircle2, Heart } from 'lucide-react';
+import { X, MessageSquare, Send, CheckCircle2, Heart, Star } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { contentService } from '../../services/contentService';
 
@@ -13,6 +13,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
   const [subjectOrTopic, setSubjectOrTopic] = useState('');
   const [message, setMessage] = useState('');
   const [studentContact, setStudentContact] = useState('');
+  const [rating, setRating] = useState<number | null>(null);
+  const [hoveredRating, setHoveredRating] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { showToast } = useToast();
@@ -30,6 +32,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
         email: studentContact.includes('@') ? studentContact.trim() : '',
         type: feedbackType === 'request_material' ? 'material_request' : feedbackType === 'bug_or_issue' ? 'correction' : 'feedback',
         subjectRequested: subjectOrTopic.trim() || undefined,
+        rating: rating || undefined,
         message: message.trim(),
       });
       setIsSubmitting(false);
@@ -40,6 +43,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
         setSubjectOrTopic('');
         setMessage('');
         setStudentContact('');
+        setRating(null);
+        setHoveredRating(null);
         onClose();
       }, 1400);
     } catch (error) {
@@ -71,10 +76,10 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
             </div>
             <div>
               <h2 id="feedback-dialog-title" className="font-serif font-bold text-base text-slate-900 leading-none">
-                Student Feedback & Requests
+                Share Your Feedback
               </h2>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Help improve StudyZone MJCET for your department
+                Help us make StudyZone MJCET better for everyone.
               </p>
             </div>
           </div>
@@ -101,10 +106,36 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-4 py-3.5 text-center">
+              <p className="text-xs font-semibold text-slate-800">How would you rate StudyZone MJCET?</p>
+              <div className="flex items-center justify-center gap-1.5 mt-2" onMouseLeave={() => setHoveredRating(null)}>
+                {[1, 2, 3, 4, 5].map((value) => {
+                  const activeRating = hoveredRating ?? rating ?? 0;
+                  const isActive = value <= activeRating;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-label={`Rate ${value} out of 5`}
+                      onMouseEnter={() => setHoveredRating(value)}
+                      onFocus={() => setHoveredRating(value)}
+                      onBlur={() => setHoveredRating(null)}
+                      onClick={() => setRating(value)}
+                      className="p-1 text-amber-400 hover:scale-110 transition-transform cursor-pointer"
+                    >
+                      <Star className={`w-6 h-6 ${isActive ? 'fill-amber-400' : 'fill-transparent'}`} />
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1.5 min-h-4">
+                {((hoveredRating ?? rating) && `${hoveredRating ?? rating} - ${['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][(hoveredRating ?? rating)! - 1]}`) || 'Optional'}
+              </p>
+            </div>
             {/* Category selection */}
-            <div>
-              <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-700 block">
                 What would you like to submit?
               </label>
               <div className="grid grid-cols-3 gap-2 text-xs">
@@ -145,6 +176,19 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
             </div>
 
             <div>
+              <label htmlFor="feedback-contact" className="text-xs font-semibold text-slate-700 block mb-1">
+                Email
+              </label>
+              <input
+                id="feedback-contact"
+                type="text"
+                value={studentContact}
+                onChange={(e) => setStudentContact(e.target.value)}
+                placeholder="e.g. Rollnumber@mjcollege.ac.in"
+                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-blue-500 transition-colors"
+              />
+            </div>
+            <div>
               <label htmlFor="feedback-subject" className="text-xs font-semibold text-slate-700 block mb-1">
                 Subject / Topic (Optional)
               </label>
@@ -173,19 +217,6 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
               />
             </div>
 
-            <div>
-              <label htmlFor="feedback-contact" className="text-xs font-semibold text-slate-700 block mb-1">
-                Email / Roll Number (Optional)
-              </label>
-              <input
-                id="feedback-contact"
-                type="text"
-                value={studentContact}
-                onChange={(e) => setStudentContact(e.target.value)}
-                placeholder="e.g. 1604-23-733-xxx or student@mjcollege.ac.in"
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-blue-500 transition-colors"
-              />
-            </div>
 
             <div className="pt-2 flex items-center justify-between">
               <div className="flex items-center gap-1 text-[11px] text-slate-400">

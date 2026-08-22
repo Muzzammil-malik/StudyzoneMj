@@ -126,8 +126,8 @@ export const SubjectPage: React.FC = () => {
       {/* Folders List/Grid */}
       {filteredFolders.length === 0 ? (
         <EmptyState
-          title={folderQuery ? "No matching folders" : "No folders found"}
-          description={folderQuery ? `No folders match "${folderQuery}" in this subject.` : "This subject has no academic folders assigned yet."}
+          title={folderQuery ? "No matching folders" : "Coming Soon....."}
+          description={folderQuery ? `No folders match "${folderQuery}" in this subject.` : undefined}
           actionLabel={folderQuery ? "Clear Filter" : undefined}
           onAction={() => setFolderQuery('')}
         />

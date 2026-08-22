@@ -11,6 +11,7 @@ import {
   BookOpen,
   Send,
   Calendar,
+  Star,
 } from 'lucide-react';
 import { contentService } from '../../services/contentService';
 import { FeedbackItem } from '../../types/feedback';
@@ -147,6 +148,7 @@ export const AdminFeedbackPage: React.FC = () => {
               <tr className="border-b border-slate-100 bg-slate-50/75 text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
                 <th className="py-3.5 px-4">Student</th>
                 <th className="py-3.5 px-4">Type</th>
+                <th className="py-3.5 px-4">Rating</th>
                 <th className="py-3.5 px-4">Message Snippet</th>
                 <th className="py-3.5 px-4">Date</th>
                 <th className="py-3.5 px-4 text-center">Status</th>
@@ -156,13 +158,13 @@ export const AdminFeedbackPage: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
+                  <td colSpan={7} className="py-8 text-center text-slate-400">
                     Loading feedback...
                   </td>
                 </tr>
               ) : filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-slate-400">
+                  <td colSpan={7} className="py-10 text-center text-slate-400">
                     No feedback found.
                   </td>
                 </tr>
@@ -189,6 +191,14 @@ export const AdminFeedbackPage: React.FC = () => {
                       <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-700">
                         {item.type?.replace('_', ' ') || 'Feedback'}
                       </span>
+                    </td>
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      {item.rating ? (
+                        <span className="inline-flex items-center gap-1 text-amber-500 font-semibold" aria-label={`${item.rating} out of 5 stars`}>
+                          <Star className="w-3.5 h-3.5 fill-amber-400" />
+                          <span className="text-slate-700">{item.rating}/5</span>
+                        </span>
+                      ) : <span className="text-slate-400">Not rated</span>}
                     </td>
                     <td className="py-3.5 px-4 text-slate-700 max-w-sm truncate">
                       {item.message}
@@ -287,6 +297,16 @@ export const AdminFeedbackPage: React.FC = () => {
                   <p className="font-bold text-slate-900 text-sm mt-0.5">
                     {selectedItem.subjectRequested}
                   </p>
+                </div>
+              )}
+
+              {selectedItem.rating && (
+                <div>
+                  <span className="text-slate-400 block text-[11px] uppercase font-semibold mb-1">StudyZone Rating:</span>
+                  <div className="inline-flex items-center gap-1 text-amber-500" aria-label={`${selectedItem.rating} out of 5 stars`}>
+                    {[1, 2, 3, 4, 5].map((value) => <Star key={value} className={`w-4 h-4 ${value <= selectedItem.rating! ? 'fill-amber-400' : 'fill-transparent'}`} />)}
+                    <span className="ml-1 text-xs font-semibold text-slate-700">{selectedItem.rating}/5</span>
+                  </div>
                 </div>
               )}
 

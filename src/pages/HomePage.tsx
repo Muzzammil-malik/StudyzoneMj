@@ -12,7 +12,6 @@ import {
   FileCode2,
   ListTree,
   Archive,
-  ArrowRight,
   GraduationCap,
 } from 'lucide-react';
 import { useSubjects } from '../hooks/useSubjects';
@@ -104,7 +103,7 @@ export const HomePage: React.FC = () => {
         {/* Top Pill Badge with Blue Bullet Dot */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#EFF6FF] text-[#2563EB] text-[11px] sm:text-xs font-semibold tracking-wider uppercase border border-blue-100 shadow-2xs">
           <span className="w-2 h-2 rounded-full bg-[#2563EB] shrink-0" />
-          <span>MJCET Academic Resource Repository</span>
+          <span>All resources As per the latest Autonomus R25 Syllabus</span>
         </div>
 
         {/* Hero Title in Elegant EB Garamond Serif */}
@@ -113,10 +112,11 @@ export const HomePage: React.FC = () => {
         </h1>
 
         {/* Subtitle / Description */}
+      
         <p className="font-poppins text-slate-600 text-sm sm:text-base md:text-[17px] max-w-2xl mx-auto leading-relaxed">
           Your digital academic library for MJCET. Access lecture notes, previous year question papers, lab manuals, and syllabus instantly.
         </p>
-
+       
         {/* Main Search Bar (Primary Interaction) */}
         <div className="pt-2 max-w-2xl mx-auto">
           <button
@@ -261,49 +261,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ============================================================ */}
-      {/* 2. RECENTLY VIEWED (Contextual) */}
-      {/* ============================================================ */}
-      {recents.length > 0 && selectedCategory === 'All Resources' && (
-        <section id="recently-viewed-section" className="space-y-3 pt-2">
-          <div className="flex items-center justify-between pb-1 border-b border-slate-200/70">
-            <h2 className="font-serif text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-blue-600" />
-              <span>Recently Viewed</span>
-            </h2>
-            <Link
-              to="/bookmarks"
-              className="text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors"
-            >
-              Saved bookmarks →
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {recents.map((item) => (
-              <Link
-                key={item.recent.resourceId}
-                to={`/resource/${item.resource.id}`}
-                className="group p-3.5 bg-white border border-slate-200/80 hover:border-blue-400 rounded-xl shadow-2xs hover:shadow-xs transition-all flex items-start gap-3"
-              >
-                <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 mt-0.5">
-                  <FileText className="w-4 h-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-xs font-semibold text-slate-900 group-hover:text-blue-600 truncate transition-colors">
-                    {item.resource.name}
-                  </h4>
-                  <p className="text-[11px] text-slate-400 truncate mt-0.5">
-                    {item.subject?.name || 'MJCET Resource'}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ============================================================ */}
-      {/* 3. DYNAMIC CONTENT: CATEGORY VIEW vs SUBJECTS CURRICULUM */}
+      {/* 2. DYNAMIC CONTENT: CATEGORY VIEW vs SUBJECTS CURRICULUM */}
       {/* ============================================================ */}
       {selectedCategory !== 'All Resources' ? (
         <section id="category-explorer-section">
@@ -357,35 +315,47 @@ export const HomePage: React.FC = () => {
       )}
 
       {/* ============================================================ */}
-      {/* 4. PREVIOUS YEAR PAPERS (PYQ) HIGHLIGHT CALLOUT */}
+      {/* 3. RECENTLY VIEWED (Contextual) */}
       {/* ============================================================ */}
-      <section className="bg-white/80 backdrop-blur-xs border border-slate-200/90 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xs">
-        <div className="space-y-1.5 text-center sm:text-left">
-          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-100">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Exam Preparation</span>
+      {recents.length > 0 && selectedCategory === 'All Resources' && (
+        <section id="recently-viewed-section" className="space-y-3 pt-2">
+          <div className="flex items-center justify-between pb-1 border-b border-slate-200/70">
+            <h2 className="font-serif text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-blue-600" />
+              <span>Recently Viewed</span>
+            </h2>
+            <Link
+              to="/bookmarks"
+              className="text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors"
+            >
+              Saved bookmarks →
+            </Link>
           </div>
-          <h3 className="font-serif font-bold text-slate-900 text-lg sm:text-xl">
-            Looking for Previous Year Question Papers (PYQs)?
-          </h3>
-          <p className="text-xs sm:text-sm text-slate-500 max-w-xl leading-relaxed">
-            Quickly find university semester question papers, internal midterms, and faculty-curated answer keys for all semesters.
-          </p>
-        </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            setSelectedCategory('PYQs (Previous Years)');
-            const el = document.getElementById('category-explorer-section');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
-          className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-[#1E60F2] hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold rounded-full shadow-xs transition-colors shrink-0 cursor-pointer"
-        >
-          <span>Explore All PYQs</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </section>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {recents.map((item) => (
+              <Link
+                key={item.recent.resourceId}
+                to={`/resource/${item.resource.id}`}
+                className="group p-3.5 bg-white border border-slate-200/80 hover:border-blue-400 rounded-xl shadow-2xs hover:shadow-xs transition-all flex items-start gap-3"
+              >
+                <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-xs font-semibold text-slate-900 group-hover:text-blue-600 truncate transition-colors">
+                    {item.resource.name}
+                  </h4>
+                  <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                    {item.subject?.name || 'MJCET Resource'}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
     </div>
   );
 };

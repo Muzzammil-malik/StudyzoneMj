@@ -5,6 +5,7 @@ export interface FeedbackItem {
   type?: 'material_request' | 'correction' | 'feedback' | 'other';
   message: string;
   subjectRequested?: string;
+  rating?: number;
   status: 'unread' | 'read';
   createdAt: string;
 }

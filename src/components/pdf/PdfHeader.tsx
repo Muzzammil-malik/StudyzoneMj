@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bookmark, Download, Share2, ZoomIn, ZoomOut, Maximize2, Minimize2, Info } from 'lucide-react';
+import { ArrowLeft, Bookmark, Download, Share2, ZoomIn, ZoomOut, Maximize2, Minimize2, Info, PanelLeft } from 'lucide-react';
 import { Resource } from '../../types/resource';
 import { useIsBookmarked } from '../../hooks/useBookmarks';
 import { useToast } from '../ui/Toast';
@@ -14,6 +14,7 @@ interface PdfHeaderProps {
   onToggleFullscreen: () => void;
   isInfoOpen: boolean;
   onToggleInfo: () => void;
+  onToggleSidebar?: () => void;
 }
 
 export const PdfHeader: React.FC<PdfHeaderProps> = ({
@@ -24,6 +25,7 @@ export const PdfHeader: React.FC<PdfHeaderProps> = ({
   onToggleFullscreen,
   isInfoOpen,
   onToggleInfo,
+  onToggleSidebar,
 }) => {
   const navigate = useNavigate();
   const { isBookmarked, toggle: toggleBookmark } = useIsBookmarked(resource.id);
@@ -81,6 +83,15 @@ export const PdfHeader: React.FC<PdfHeaderProps> = ({
           className="p-2 -ml-1 text-slate-600 hover:text-slate-950 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer shrink-0"
         >
           <ArrowLeft className="w-4.5 h-4.5" />
+        </button>
+
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          aria-label="Toggle page thumbnails"
+          className="p-2 text-slate-600 hover:text-slate-950 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer shrink-0"
+        >
+          <PanelLeft className="w-4 h-4" />
         </button>
 
         <div className="min-w-0">

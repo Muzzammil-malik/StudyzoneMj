@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Mail, Phone, Linkedin, Heart, BookOpen, ExternalLink, ShieldCheck, Lock } from 'lucide-react';
+import { Mail, Linkedin, Heart, BookOpen, ExternalLink, ShieldCheck } from 'lucide-react';
+import { FaWhatsapp } from 'react-icons/fa6';
 import { contentService } from '../../services/contentService';
 import { AdminSettings } from '../../types/admin';
 import { useSubjects } from '../../hooks/useSubjects';
@@ -103,7 +103,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectSubject, onOpenFeedback 
                   href={`tel:${settings.contactPhone || ''}`}
                   className="flex items-center gap-2 hover:text-brand-600 transition-colors group"
                 >
-                  <Phone className="w-3.5 h-3.5 text-content-muted group-hover:text-brand-600" />
+                  <FaWhatsapp size={14} color="currentColor" aria-hidden="true" />
                   <span>{settings.contactPhone || 'Contact phone unavailable'}</span>
                 </a>
 
@@ -129,18 +129,9 @@ export const Footer: React.FC<FooterProps> = ({ onSelectSubject, onOpenFeedback 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>All 11 First & Second Year Subjects Active</span>
+              <span>For the students ,by a student</span>
             </div>
 
-            <span className="text-slate-300">•</span>
-
-            <Link
-              to="/admin"
-              className="inline-flex items-center gap-1 text-slate-500 hover:text-blue-600 font-medium transition-colors"
-            >
-              <Lock className="w-3 h-3" />
-              <span>Admin CMS</span>
-            </Link>
           </div>
         </div>
       </div>
