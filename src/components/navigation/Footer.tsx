@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Mail, Linkedin, Heart, ExternalLink, ShieldCheck } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa6';
+import logo from '@/assets/SZ.png';
 import { contentService } from '../../services/contentService';
 import { AdminSettings } from '../../types/admin';
 import { useSubjects } from '../../hooks/useSubjects';
-import logo from './assets/SZ.png';
 
 interface FooterProps {
   onSelectSubject?: (subjectId: string) => void;
@@ -27,7 +27,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectSubject, onOpenFeedback 
           <div className="md:col-span-5 space-y-4">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg overflow-hidden">
-                <img src={logo} alt="StudyZone" className="w-full h-full object-cover" />
+                <img src={logo} alt="StudyZone logo" className="w-full h-full object-cover" />
               </div>
               <span className="font-academic text-2xl font-bold tracking-tight text-content-primary">
                 {settings.websiteName || 'StudyZone MJCET'}

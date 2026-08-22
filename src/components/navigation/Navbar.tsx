@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Search, Bookmark, MessageSquare } from 'lucide-react';
+import logo from '@/assets/SZ.png';
 import { useBookmarks } from '../../hooks/useBookmarks';
 import { FeedbackModal } from './FeedbackModal';
-import logo from "./assets/SZ.png";
 
 interface NavbarProps {
   onOpenSearch: () => void;
@@ -29,7 +29,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSearch }) => {
             className="flex items-center gap-2.5 group focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg p-1 -ml-1 transition-opacity hover:opacity-95 shrink-0"
           >
             <div className="w-9 h-9 rounded-xl overflow-hidden shadow-xs shrink-0">
-              <img src={logo} alt="StudyZone" className="w-full h-full object-cover" />
+              <img src={logo} alt="StudyZone logo" className="w-full h-full object-cover" />
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
