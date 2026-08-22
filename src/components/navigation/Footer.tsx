@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Mail, Linkedin, Heart, ExternalLink, ShieldCheck } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa6';
-import logo from '@/assets/SZ.png';
+import logo from '@/src/assets/SZ.png';
 import { contentService } from '../../services/contentService';
 import { AdminSettings } from '../../types/admin';
 import { useSubjects } from '../../hooks/useSubjects';

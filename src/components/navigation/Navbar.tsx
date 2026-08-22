@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Search, Bookmark, MessageSquare } from 'lucide-react';
-import logo from '@/assets/SZ.png';
+import logo from '@/src/assets/SZ.png';
 import { useBookmarks } from '../../hooks/useBookmarks';
 import { FeedbackModal } from './FeedbackModal';
 
