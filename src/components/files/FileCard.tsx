@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Download, Share2, Bookmark, Eye } from 'lucide-react';
+import { FileText, Download, Share2, Bookmark } from 'lucide-react';
 import { Resource } from '../../types/resource';
 import { useIsBookmarked } from '../../hooks/useBookmarks';
 import { useToast } from '../ui/Toast';
 import { downloadResource } from '../../services/fileService';
+import { PdfThumbnail } from './PdfThumbnail';
 
 interface FileCardProps {
   resource: Resource;
@@ -72,88 +73,67 @@ export const FileCard: React.FC<FileCardProps> = ({ resource, subjectName }) => 
   return (
     <div
       id={`file-card-${resource.id}`}
-      className="group bg-white border border-slate-200/90 hover:border-blue-400 rounded-xl p-4 shadow-2xs hover:shadow-xs transition-all duration-150 flex flex-col justify-between"
+      className="group bg-white border border-slate-200/90 hover:border-blue-400 rounded-xl shadow-2xs hover:shadow-xs transition-all duration-150 flex flex-col justify-between overflow-hidden"
     >
-      <div>
-        <div className="flex items-start justify-between gap-3 mb-2.5">
-          <Link
-            to={`/resource/${resource.id}`}
-            className="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white flex items-center justify-center transition-colors shrink-0"
-            aria-label={`Preview ${resource.name}`}
-          >
-            <FileText className="w-5 h-5" />
-          </Link>
-
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={handleBookmarkToggle}
-              id={`btn-bookmark-${resource.id}`}
-              aria-label={isBookmarked ? 'Remove bookmark' : 'Add to bookmarks'}
-              className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                isBookmarked
-                  ? 'bg-blue-50 border-blue-200 text-blue-600'
-                  : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-400 hover:text-slate-700'
-              }`}
-            >
-              <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-blue-600 text-blue-600' : ''}`} />
-            </button>
-
-            <button
-              type="button"
-              onClick={handleShare}
-              id={`btn-share-${resource.id}`}
-              aria-label="Share resource"
-              className="p-1.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-            </button>
-
-            <button
-              type="button"
-              onClick={handleDownload}
-              id={`btn-download-${resource.id}`}
-              aria-label={`Download ${resource.name}`}
-              className="p-1.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-            </button>
+      <Link
+        to={`/resource/${resource.id}`}
+        className="block focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
+        aria-label={`Open ${resource.name}`}
+      >
+        <PdfThumbnail fileUrl={resource.fileUrl} fileName={resource.name} />
+        <div className="p-3.5">
+          <div className="flex items-start gap-2.5">
+            <FileText className="w-4 h-4 mt-0.5 text-rose-500 shrink-0" />
+            <div className="min-w-0">
+              <h4 title={resource.name} className="font-sans font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors truncate leading-snug">
+                {resource.name}
+              </h4>
+              <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
+                <span className="font-medium text-slate-600">{formatBytes(resource.fileSize)}</span>
+                {resource.pageCount && (
+                  <>
+                    <span className="text-slate-300">•</span>
+                    <span>{resource.pageCount} pages</span>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
+      </Link>
 
-        <Link
-          to={`/resource/${resource.id}`}
-          className="block group/link focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+      <div className="px-3.5 pb-3.5 flex items-center justify-end gap-1 border-t border-slate-100 pt-2.5">
+        <button
+          type="button"
+          onClick={handleBookmarkToggle}
+          id={`btn-bookmark-${resource.id}`}
+          aria-label={isBookmarked ? 'Remove bookmark' : 'Add to bookmarks'}
+          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+            isBookmarked
+              ? 'bg-blue-50 border-blue-200 text-blue-600'
+              : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-400 hover:text-slate-700'
+          }`}
         >
-          <h4 className="font-sans font-semibold text-sm text-slate-900 group-hover/link:text-blue-600 transition-colors line-clamp-2 leading-snug mb-1">
-            {resource.name}
-          </h4>
-          {resource.description && (
-            <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-3">
-              {resource.description}
-            </p>
-          )}
-        </Link>
-      </div>
-
-      <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 mt-auto">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-slate-600">{formatBytes(resource.fileSize)}</span>
-          {resource.pageCount && (
-            <>
-              <span className="text-slate-300">•</span>
-              <span>{resource.pageCount} pgs</span>
-            </>
-          )}
-        </div>
-
-        <Link
-          to={`/resource/${resource.id}`}
-          className="inline-flex items-center gap-1 font-medium text-blue-600 hover:text-blue-700 text-xs"
+          <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-blue-600 text-blue-600' : ''}`} />
+        </button>
+        <button
+          type="button"
+          onClick={handleShare}
+          id={`btn-share-${resource.id}`}
+          aria-label="Share resource"
+          className="p-1.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
         >
-          <Eye className="w-3.5 h-3.5" />
-          <span>Open PDF</span>
-        </Link>
+          <Share2 className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={handleDownload}
+          id={`btn-download-${resource.id}`}
+          aria-label={`Download ${resource.name}`}
+          className="p-1.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+        >
+          <Download className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   );
