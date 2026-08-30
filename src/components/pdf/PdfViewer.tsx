@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -25,6 +25,7 @@ interface PageShellProps {
   width: number;
   renderPage: boolean;
   register: (pageNumber: number, element: HTMLDivElement | null) => void;
+  onRenderSuccess: (pageNumber: number) => void;
 }
 
 const MIN_DESKTOP_ZOOM = 0.6;
@@ -39,7 +40,7 @@ const touchDistance = (touches: TouchList) => {
   return Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
 };
 
-const PageShell = React.memo(({ pageNumber, width, renderPage, register }: PageShellProps) => (
+const PageShell = React.memo(({ pageNumber, width, renderPage, register, onRenderSuccess }: PageShellProps) => (
   <div
     ref={(element) => register(pageNumber, element)}
     data-page={pageNumber}
@@ -50,8 +51,10 @@ const PageShell = React.memo(({ pageNumber, width, renderPage, register }: PageS
       <Page
         pageNumber={pageNumber}
         width={width}
+        devicePixelRatio={Math.min(window.devicePixelRatio || 1, 2)}
         renderAnnotationLayer
         renderTextLayer
+        onRenderSuccess={() => onRenderSuccess(pageNumber)}
         className="shrink-0 bg-white shadow-md"
         loading={<div style={{ width }} className="aspect-[1/1.414] bg-white shadow-md animate-pulse" />}
       />
@@ -114,6 +117,7 @@ const pageWindow = (center: number, count: number, radius = 3) =>
 export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder, folderHierarchy = [] }) => {
   const viewerRootRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const pageContentRef = useRef<HTMLDivElement>(null);
   const thumbnailViewportRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const currentPageRef = useRef(1);
@@ -121,8 +125,9 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
   const [zoomLevel, setZoomLevel] = useState(1);
   const zoomLevelRef = useRef(zoomLevel);
   const [pageCount, setPageCount] = useState(resource.pageCount || 1);
-  const [pageWidth, setPageWidth] = useState(760);
+  const [pageWidth, setPageWidth] = useState<number | null>(null);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [isDocumentReady, setIsDocumentReady] = useState(false);
   const [renderedPages, setRenderedPages] = useState<Set<number>>(() => new Set([1, 2, 3]));
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -139,6 +144,43 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
     });
   }, [maxZoom, minZoom]);
 
+  const removeZoomPreview = useCallback((pageNumber: number) => {
+    const page = viewportRef.current?.querySelector<HTMLElement>(`.react-pdf__Page[data-page-number="${pageNumber}"]`);
+    page?.querySelector('.pdf-zoom-preview')?.remove();
+  }, []);
+
+  const snapshotVisiblePages = useCallback(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const viewportBounds = viewport.getBoundingClientRect();
+    viewport.querySelectorAll<HTMLCanvasElement>('.react-pdf__Page__canvas').forEach((canvas) => {
+      const page = canvas.closest('.react-pdf__Page') as HTMLElement | null;
+      const pageBounds = page?.getBoundingClientRect();
+      if (!page || !pageBounds || pageBounds.bottom <= viewportBounds.top || pageBounds.top >= viewportBounds.bottom) return;
+
+      page.querySelector('.pdf-zoom-preview')?.remove();
+      const preview = document.createElement('canvas');
+      const context = preview.getContext('2d');
+      if (!context || !canvas.width || !canvas.height) return;
+
+      preview.width = canvas.width;
+      preview.height = canvas.height;
+      context.drawImage(canvas, 0, 0);
+      preview.className = 'pdf-zoom-preview';
+      preview.setAttribute('aria-hidden', 'true');
+      Object.assign(preview.style, {
+        position: 'absolute',
+        inset: '0',
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: '10',
+      });
+      page.append(preview);
+    });
+  }, []);
+
   useEffect(() => {
     zoomLevelRef.current = zoomLevel;
   }, [zoomLevel]);
@@ -147,13 +189,22 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
     pageRefs.current[pageNumber] = element;
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (!isDocumentReady) return;
     const viewport = viewportRef.current;
     if (!viewport) return;
+
+    let frame: number | null = null;
+    let lastWidth = 0;
     const updateWidth = () => {
       const styles = window.getComputedStyle(viewport);
       const horizontalPadding = Number.parseFloat(styles.paddingLeft) + Number.parseFloat(styles.paddingRight);
-      const availableWidth = Math.max(1, Math.floor(viewport.clientWidth - horizontalPadding));
+      const contentWidth = viewport.clientWidth - horizontalPadding;
+      if (contentWidth <= 0) return;
+      const availableWidth = Math.floor(contentWidth);
+
+      if (Math.abs(availableWidth - lastWidth) < 1) return;
+      lastWidth = availableWidth;
 
       setPageWidth((currentWidth) => {
         const nextWidth = Math.min(860, availableWidth);
@@ -161,11 +212,16 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
       });
       setIsMobileViewport(viewport.clientWidth < 768);
     };
+
     updateWidth();
+    frame = window.requestAnimationFrame(updateWidth);
     const observer = new ResizeObserver(updateWidth);
     observer.observe(viewport);
-    return () => observer.disconnect();
-  }, [isSidebarOpen]);
+    return () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [isDocumentReady]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -203,7 +259,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
     );
     Object.values(pageRefs.current).forEach((page) => page && observer.observe(page as Element));
     return () => observer.disconnect();
-  }, [pageCount]);
+  }, [pageCount, pageWidth]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -225,16 +281,27 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
 
   useEffect(() => {
     const viewport = viewportRef.current;
-    if (!viewport) return;
+    const pageContent = pageContentRef.current;
+    if (!viewport || !pageContent) return;
 
     let pinchStartDistance = 0;
     let pinchStartZoom = 1;
+    let previewZoom = 1;
+    let focalContentX = 0;
+    let focalContentY = 0;
+    let startScrollLeft = 0;
+    let startScrollTop = 0;
     let animationFrame: number | null = null;
     let pendingZoom: number | null = null;
 
     const flushZoom = () => {
       animationFrame = null;
-      if (pendingZoom !== null) updateZoom(pendingZoom);
+      if (pendingZoom === null || !pinchStartDistance) return;
+      previewZoom = pendingZoom;
+      const previewScale = previewZoom / pinchStartZoom;
+      pageContent.style.transform = `scale(${previewScale})`;
+      viewport.scrollLeft = startScrollLeft + ((previewScale - 1) * focalContentX);
+      viewport.scrollTop = startScrollTop + ((previewScale - 1) * focalContentY);
       pendingZoom = null;
     };
 
@@ -242,17 +309,45 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
       if (event.touches.length !== 2) return;
       pinchStartDistance = touchDistance(event.touches);
       pinchStartZoom = zoomLevelRef.current;
+      previewZoom = pinchStartZoom;
+      const midpointX = (event.touches[0].clientX + event.touches[1].clientX) / 2;
+      const midpointY = (event.touches[0].clientY + event.touches[1].clientY) / 2;
+      const contentBounds = pageContent.getBoundingClientRect();
+      focalContentX = midpointX - contentBounds.left;
+      focalContentY = midpointY - contentBounds.top;
+      startScrollLeft = viewport.scrollLeft;
+      startScrollTop = viewport.scrollTop;
+      pageContent.style.willChange = 'transform';
     };
 
     const handleTouchMove = (event: TouchEvent) => {
       if (event.touches.length !== 2 || !pinchStartDistance) return;
       event.preventDefault();
-      pendingZoom = pinchStartZoom * (touchDistance(event.touches) / pinchStartDistance);
+      pendingZoom = clamp(pinchStartZoom * (touchDistance(event.touches) / pinchStartDistance), minZoom, maxZoom);
       if (animationFrame === null) animationFrame = window.requestAnimationFrame(flushZoom);
     };
 
     const handleTouchEnd = (event: TouchEvent) => {
-      if (event.touches.length < 2) pinchStartDistance = 0;
+      if (event.touches.length >= 2 || !pinchStartDistance) return;
+      if (animationFrame !== null) {
+        window.cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+        flushZoom();
+      }
+
+      const finalZoom = previewZoom;
+      const finalScale = finalZoom / pinchStartZoom;
+      pinchStartDistance = 0;
+      pageContent.style.transform = '';
+      pageContent.style.willChange = '';
+
+      if (Math.abs(finalZoom - zoomLevelRef.current) < 0.005) return;
+      snapshotVisiblePages();
+      updateZoom(finalZoom);
+      window.requestAnimationFrame(() => {
+        viewport.scrollLeft = startScrollLeft + ((finalScale - 1) * focalContentX);
+        viewport.scrollTop = startScrollTop + ((finalScale - 1) * focalContentY);
+      });
     };
 
     viewport.addEventListener('touchstart', handleTouchStart, { passive: true });
@@ -265,8 +360,10 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
       viewport.removeEventListener('touchmove', handleTouchMove);
       viewport.removeEventListener('touchend', handleTouchEnd);
       viewport.removeEventListener('touchcancel', handleTouchEnd);
+      pageContent.style.transform = '';
+      pageContent.style.willChange = '';
     };
-  }, [updateZoom]);
+  }, [isDocumentReady, maxZoom, minZoom, pageWidth, snapshotVisiblePages, updateZoom]);
 
   useEffect(() => {
     const handleFullscreenChange = () => setIsFullscreen(document.fullscreenElement === viewerRootRef.current);
@@ -280,6 +377,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
     setCurrentPage(1);
     setPageCount(resource.pageCount || 1);
     setRenderedPages(new Set([1, 2, 3]));
+    setIsDocumentReady(false);
+    setPageWidth(null);
     setPdfError(false);
   }, [resource.id, resource.fileUrl, resource.pageCount]);
 
@@ -301,8 +400,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
       <PdfHeader resource={resource} zoomLevel={zoomLevel} minZoom={minZoom} maxZoom={maxZoom} onZoomChange={updateZoom} isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} isInfoOpen={isInfoOpen} onToggleInfo={() => setIsInfoOpen((open) => !open)} onToggleSidebar={() => setIsSidebarOpen((open) => !open)} />
       <Document
         file={resource.fileUrl}
-        onLoadSuccess={({ numPages }) => { setPageCount(numPages); setPdfError(false); }}
-        onLoadError={(error) => { console.error('PDF.js failed to load document', error); setPdfError(true); }}
+        onLoadSuccess={({ numPages }) => { setPageCount(numPages); setIsDocumentReady(true); setPdfError(false); }}
+        onLoadError={(error) => { console.error('PDF.js failed to load document', error); setIsDocumentReady(false); setPdfError(true); }}
         loading={<div className="flex-1 bg-slate-200/70 p-4 sm:p-8"><div className="max-w-3xl mx-auto aspect-[1/1.414] bg-white rounded-sm shadow-md animate-pulse" /></div>}
         error={<div className="flex-1 bg-slate-200/70 p-12 text-center text-sm text-slate-600">Unable to load this PDF.<br />Please try again.</div>}
         className="flex-1 flex min-w-0 flex-col min-h-0"
@@ -316,7 +415,11 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
           </div>
         </aside>
         <div ref={viewportRef} id="pdf-scroll-viewport" className="flex-1 min-w-0 overflow-auto overscroll-contain bg-slate-200/70 p-4 sm:p-8" style={{ touchAction: 'pan-x pan-y' }}>
-          {!pdfError && pageNumbers(pageCount).map((page) => <PageShell key={page} pageNumber={page} width={pageWidth * zoomLevel} renderPage={renderedPages.has(page)} register={registerPage} />)}
+          {pageWidth !== null && (
+            <div ref={pageContentRef} className="relative min-w-full origin-top-left" style={{ width: pageWidth * zoomLevel }}>
+              {!pdfError && pageNumbers(pageCount).map((page) => <PageShell key={page} pageNumber={page} width={pageWidth * zoomLevel} renderPage={renderedPages.has(page)} register={registerPage} onRenderSuccess={removeZoomPreview} />)}
+            </div>
+          )}
         </div>
         <PdfInfoPanel resource={resource} subject={subject} folder={folder} folderHierarchy={folderHierarchy} isOpen={isInfoOpen} onClose={() => setIsInfoOpen(false)} />
       </div>
