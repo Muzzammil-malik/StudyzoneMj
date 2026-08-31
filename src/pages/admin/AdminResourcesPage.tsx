@@ -62,7 +62,7 @@ export const AdminResourcesPage: React.FC = () => {
     categoryId: '',
     semesterId: '',
     authorOrProfessor: 'MJCET Faculty',
-    academicYear: '2024–2025',
+    academicYear: '2025–26',
     pageCount: 12,
     fileSizeMB: 2.5,
     tagsInput: 'Lecture Notes, MJCET',
