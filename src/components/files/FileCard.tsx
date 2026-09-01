@@ -139,12 +139,6 @@ export const FileCard: React.FC<FileCardProps> = ({ resource, subjectName }) => 
       <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 mt-auto">
         <div className="flex items-center gap-2">
           <span className="font-medium text-slate-600">{formatBytes(resource.fileSize)}</span>
-          {resource.pageCount && (
-            <>
-              <span className="text-slate-300">•</span>
-              <span>{resource.pageCount} pgs</span>
-            </>
-          )}
         </div>
 
         <Link
@@ -229,12 +223,6 @@ export const FileRow: React.FC<FileCardProps> = ({ resource, subjectName }) => {
           </h4>
           <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
             <span className="font-medium text-slate-600">{formatBytes(resource.fileSize)}</span>
-            {resource.pageCount && (
-              <>
-                <span className="text-slate-300">•</span>
-                <span>{resource.pageCount} pages</span>
-              </>
-            )}
             {resource.authorOrProfessor && (
               <>
                 <span className="text-slate-300 hidden md:inline">•</span>
