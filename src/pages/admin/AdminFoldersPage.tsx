@@ -16,9 +16,6 @@ import {
   Eye,
   Layers,
   Calendar,
-  Copy,
-  Check,
-  Loader2,
 } from 'lucide-react';
 import { contentService } from '../../services/contentService';
 import { Folder } from '../../types/folder';
@@ -47,12 +44,6 @@ export const AdminFoldersPage: React.FC = () => {
   const [folderToDelete, setFolderToDelete] = useState<Folder | null>(null);
   const [previewResource, setPreviewResource] = useState<Resource | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [importSourceSubjectId, setImportSourceSubjectId] = useState('');
-  const [importSourceFolders, setImportSourceFolders] = useState<Folder[]>([]);
-  const [selectedImportFolderIds, setSelectedImportFolderIds] = useState<string[]>([]);
-  const [isLoadingImportFolders, setIsLoadingImportFolders] = useState(false);
-  const [isImportConfirmationOpen, setIsImportConfirmationOpen] = useState(false);
 
   const [folderFormData, setFolderFormData] = useState({
     name: '',
@@ -107,9 +98,6 @@ export const AdminFoldersPage: React.FC = () => {
   }, [selectedSubjectId, currentFolderId]);
 
   const currentSubject = subjects.find((s) => s.id === selectedSubjectId);
-  const importSourceSubject = subjects.find((s) => s.id === importSourceSubjectId);
-  const existingFolderNames = new Set(folders.map((folder) => folder.name.trim().toLowerCase()));
-  const selectedImportFolders = importSourceFolders.filter((folder) => selectedImportFolderIds.includes(folder.id));
 
   const handleOpenCreateFolder = () => {
     setEditingFolder(null);
@@ -118,62 +106,6 @@ export const AdminFoldersPage: React.FC = () => {
       description: '',
     });
     setIsFolderFormOpen(true);
-  };
-
-  const handleOpenImportFolders = () => {
-    setImportSourceSubjectId('');
-    setImportSourceFolders([]);
-    setSelectedImportFolderIds([]);
-    setIsImportConfirmationOpen(false);
-    setIsImportModalOpen(true);
-  };
-
-  const handleImportSourceChange = async (sourceSubjectId: string) => {
-    setImportSourceSubjectId(sourceSubjectId);
-    setImportSourceFolders([]);
-    setSelectedImportFolderIds([]);
-    if (!sourceSubjectId) return;
-
-    setIsLoadingImportFolders(true);
-    try {
-      const sourceFolders = await contentService.getAllFolders(sourceSubjectId);
-      const rootFolders = sourceFolders.filter((folder) => !folder.parentFolderId);
-      setImportSourceFolders(rootFolders);
-      setSelectedImportFolderIds(rootFolders.map((folder) => folder.id));
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to load source folders.');
-    } finally {
-      setIsLoadingImportFolders(false);
-    }
-  };
-
-  const toggleImportFolder = (folderId: string) => {
-    setSelectedImportFolderIds((current) => current.includes(folderId)
-      ? current.filter((id) => id !== folderId)
-      : [...current, folderId]);
-  };
-
-  const handleImportFolders = async () => {
-    if (!importSourceSubjectId || !selectedSubjectId || selectedImportFolderIds.length === 0) return;
-    setIsSubmitting(true);
-    try {
-      const result = await contentService.importFolders(
-        importSourceSubjectId,
-        selectedSubjectId,
-        selectedImportFolderIds,
-        currentFolderId,
-      );
-      const importedCount = result.imported.length;
-      const skippedCount = result.skipped.length;
-      toast.success(`${importedCount} folder${importedCount === 1 ? '' : 's'} imported${skippedCount ? `; ${skippedCount} already existed` : ''}.`);
-      setIsImportModalOpen(false);
-      setIsImportConfirmationOpen(false);
-      await loadFolderContents();
-    } catch (err: any) {
-      toast.error(err?.message || 'Folder import failed. No new folders were kept.');
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleOpenEditFolder = (fld: Folder, e: React.MouseEvent) => {
@@ -280,16 +212,6 @@ export const AdminFoldersPage: React.FC = () => {
           >
             <FolderPlus className="w-4 h-4" />
             <span>{currentFolderId ? 'New Subfolder' : 'New Folder'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleOpenImportFolders}
-            disabled={!selectedSubjectId}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 disabled:opacity-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-          >
-            <Copy className="w-4 h-4" />
-            <span>Import from</span>
           </button>
 
           {currentFolderId && (
@@ -566,124 +488,6 @@ export const AdminFoldersPage: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between p-5 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                  <Copy className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-serif font-bold text-slate-900 text-lg">Import Folders From</h3>
-                  <p className="text-[11px] text-slate-500">Target: {currentSubject?.name || 'Current subject'}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsImportModalOpen(false)}
-                disabled={isSubmitting}
-                className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-150px)]">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Source Subject</label>
-                <select
-                  value={importSourceSubjectId}
-                  onChange={(event) => handleImportSourceChange(event.target.value)}
-                  disabled={isSubmitting}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
-                >
-                  <option value="">Select a subject</option>
-                  {subjects.filter((subject) => subject.id !== selectedSubjectId).map((subject) => (
-                    <option key={subject.id} value={subject.id}>{subject.name} ({subject.code || subject.semester})</option>
-                  ))}
-                </select>
-              </div>
-
-              {isLoadingImportFolders && (
-                <div className="flex items-center justify-center gap-2 py-6 text-xs text-slate-500">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Loading folders...
-                </div>
-              )}
-
-              {!isLoadingImportFolders && importSourceSubjectId && importSourceFolders.length === 0 && (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-xs text-slate-500">
-                  No folders available to import.
-                </div>
-              )}
-
-              {!isLoadingImportFolders && importSourceFolders.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-slate-700">Folders from {importSourceSubject?.name}</p>
-                    <span className="text-[11px] text-slate-500">{selectedImportFolders.length} selected</span>
-                  </div>
-                  <div className="space-y-2">
-                    {importSourceFolders.map((folder) => {
-                      const isSelected = selectedImportFolderIds.includes(folder.id);
-                      const alreadyExists = existingFolderNames.has(folder.name.trim().toLowerCase());
-                      return (
-                        <label key={folder.id} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer ${isSelected ? 'border-blue-200 bg-blue-50/50' : 'border-slate-200 bg-white'}`}>
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleImportFolder(folder.id)}
-                            disabled={isSubmitting}
-                            className="mt-0.5 accent-blue-600"
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span className="flex items-center gap-2 text-xs font-semibold text-slate-900">
-                              {folder.name}
-                              {alreadyExists && <span className="text-[10px] font-medium text-amber-600">Already exists</span>}
-                            </span>
-                            <span className="block text-[11px] text-slate-500 mt-0.5">{folder.description || 'No description'}</span>
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                  <p className="text-[11px] text-slate-500">Only folder names, descriptions, and empty child folders will be copied. Resources and PDFs will not be copied.</p>
-                </div>
-              )}
-
-              {isImportConfirmationOpen && selectedImportFolders.length > 0 && (
-                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 space-y-2">
-                  <p className="text-xs font-bold text-slate-900">Import {selectedImportFolders.length} folder{selectedImportFolders.length === 1 ? '' : 's'}?</p>
-                  <p className="text-[11px] text-slate-600">From {importSourceSubject?.name} into {currentSubject?.name}. Existing folders will be kept unchanged.</p>
-                  <ul className="space-y-1 text-xs text-slate-700">
-                    {selectedImportFolders.map((folder) => <li key={folder.id} className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-600" />{folder.name}</li>)}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            <div className="p-5 border-t border-slate-100 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => isImportConfirmationOpen ? setIsImportConfirmationOpen(false) : setIsImportModalOpen(false)}
-                disabled={isSubmitting}
-                className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 bg-white border border-slate-200 rounded-lg transition-colors cursor-pointer"
-              >
-                {isImportConfirmationOpen ? 'Back' : 'Cancel'}
-              </button>
-              <button
-                type="button"
-                onClick={() => isImportConfirmationOpen ? handleImportFolders() : setIsImportConfirmationOpen(true)}
-                disabled={isSubmitting || !importSourceSubjectId || selectedImportFolders.length === 0}
-                className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors shadow-2xs cursor-pointer"
-              >
-                {isSubmitting ? 'Importing...' : isImportConfirmationOpen ? 'Import Folders' : 'Review Import'}
-              </button>
-            </div>
           </div>
         </div>
       )}

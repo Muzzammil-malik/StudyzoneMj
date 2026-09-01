@@ -95,7 +95,7 @@ export const PdfInfoPanel: React.FC<PdfInfoPanelProps> = ({
           {resource.authorOrProfessor && (
             <div className="flex items-center justify-between py-1 text-slate-600">
               <span className="flex items-center gap-1.5 text-slate-500">
-                <User className="w-3.5 h-3.5" /> Contributor
+                <User className="w-3.5 h-3.5" /> Author/Professor
               </span>
               <span className="font-semibold text-slate-800 truncate max-w-[140px]">
                 {resource.authorOrProfessor}
@@ -128,12 +128,7 @@ export const PdfInfoPanel: React.FC<PdfInfoPanelProps> = ({
         )}
 
         {/* Verification banner */}
-        <div className="p-3 bg-emerald-50/80 border border-emerald-200/80 rounded-xl text-emerald-800 text-xs flex items-start gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-          <p className="leading-relaxed">
-            Verified academic syllabus material for MJCET examinations.
-          </p>
-        </div>
+        
       </div>
     </aside>
   );
