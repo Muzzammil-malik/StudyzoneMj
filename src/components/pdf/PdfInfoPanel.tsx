@@ -28,7 +28,7 @@ export const PdfInfoPanel: React.FC<PdfInfoPanelProps> = ({
   return (
     <aside
       id="pdf-info-sidebar"
-      className="w-full sm:w-80 bg-white border-l border-slate-200 p-5 overflow-y-auto shrink-0 flex flex-col justify-between shadow-lg sm:shadow-none animate-in slide-in-from-right-4 duration-150 z-10"
+      className="absolute inset-y-0 right-0 z-30 w-full sm:w-80 sm:relative bg-white border-l border-slate-200 p-5 overflow-y-auto shrink-0 flex flex-col justify-between shadow-lg sm:shadow-none animate-in slide-in-from-right-4 duration-150"
       aria-label="Document Metadata"
     >
       <div className="space-y-6">
@@ -52,9 +52,9 @@ export const PdfInfoPanel: React.FC<PdfInfoPanelProps> = ({
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
               Subject
             </span>
-            <div className="flex items-center gap-2 text-xs font-medium text-slate-800 bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-800 bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 min-w-0">
               <BookOpen className="w-4 h-4 text-blue-600 shrink-0" />
-              <span className="truncate">{subject?.name || 'MJCET Subject'}</span>
+              <span className="truncate min-w-0">{subject?.name || 'MJCET Subject'}</span>
             </div>
           </div>
 
@@ -62,10 +62,10 @@ export const PdfInfoPanel: React.FC<PdfInfoPanelProps> = ({
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
               Location Path
             </span>
-            <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 space-y-1">
-              <div className="flex items-center gap-1.5 text-slate-700 font-medium truncate">
+            <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 space-y-1 min-w-0">
+              <div className="flex items-center gap-1.5 text-slate-700 font-medium truncate min-w-0">
                 <FolderIcon className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="truncate">{folder?.name || 'Root Folder'}</span>
+                <span className="truncate min-w-0">{folder?.name || 'Root Folder'}</span>
               </div>
               {folderHierarchy.length > 1 && (
                 <p className="text-[11px] text-slate-400 truncate">
@@ -78,37 +78,30 @@ export const PdfInfoPanel: React.FC<PdfInfoPanelProps> = ({
 
         {/* Resource Meta Grid */}
         <div className="space-y-2.5 pt-2 border-t border-slate-100 text-xs">
-          <div className="flex items-center justify-between py-1 text-slate-600">
-            <span className="flex items-center gap-1.5 text-slate-500">
-              <FileText className="w-3.5 h-3.5" /> File Size
+          <div className="flex items-center justify-between py-1 text-slate-600 gap-2">
+            <span className="flex items-center gap-1.5 text-slate-500 shrink-0">
+              <FileText className="w-3.5 h-3.5 shrink-0" /> File Size
             </span>
-            <span className="font-semibold text-slate-800">{formatBytes(resource.fileSize)}</span>
+            <span className="font-semibold text-slate-800 truncate">{formatBytes(resource.fileSize)}</span>
           </div>
 
-          <div className="flex items-center justify-between py-1 text-slate-600">
-            <span className="flex items-center gap-1.5 text-slate-500">
-              <Calendar className="w-3.5 h-3.5" /> Academic Year
+          <div className="flex items-center justify-between py-1 text-slate-600 gap-2">
+            <span className="flex items-center gap-1.5 text-slate-500 shrink-0">
+              <Calendar className="w-3.5 h-3.5 shrink-0" /> Academic Year
             </span>
-            <span className="font-semibold text-slate-800">{resource.academicYear || '2024–2025'}</span>
+            <span className="font-semibold text-slate-800 truncate">{resource.academicYear || '2024–2025'}</span>
           </div>
 
           {resource.authorOrProfessor && (
-            <div className="flex items-center justify-between py-1 text-slate-600">
-              <span className="flex items-center gap-1.5 text-slate-500">
-                <User className="w-3.5 h-3.5" /> Author/Professor
+            <div className="flex items-center justify-between py-1 text-slate-600 gap-2">
+              <span className="flex items-center gap-1.5 text-slate-500 shrink-0">
+                <User className="w-3.5 h-3.5 shrink-0" /> Author/Professor
               </span>
-              <span className="font-semibold text-slate-800 truncate max-w-[140px]">
+              <span className="font-semibold text-slate-800 truncate text-right">
                 {resource.authorOrProfessor}
               </span>
             </div>
           )}
-
-          <div className="flex items-center justify-between py-1 text-slate-600">
-            <span className="flex items-center gap-1.5 text-slate-500">
-              <Download className="w-3.5 h-3.5" /> Total Downloads
-            </span>
-            <span className="font-semibold text-slate-800">{resource.downloadsCount || 120}</span>
-          </div>
         </div>
 
         {/* Tags */}
@@ -126,10 +119,8 @@ export const PdfInfoPanel: React.FC<PdfInfoPanelProps> = ({
             </div>
           </div>
         )}
-
-        {/* Verification banner */}
-        
       </div>
     </aside>
   );
 };
+
