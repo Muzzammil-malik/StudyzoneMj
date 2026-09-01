@@ -50,6 +50,77 @@ class ContentService {
   async getFolder(id: string) { const rows = await this.rows('folders', (q) => q.select('*').eq('id', id)); const row = rows[0]; return row ? this.mapFolder(row, await this.count('folders', { parent_folder_id: id }) + await this.count('resources', { folder_id: id, status: 'published' })) : null; }
   async getFolderHierarchy(id: string) { const all = await this.getAllFolders(); const result: Folder[] = []; let current: string | null | undefined = id; while (current) { const folder = all.find((f) => f.id === current); if (!folder) break; result.unshift(folder); current = folder.parentFolderId; } return result; }
   async createFolder(data: Omit<Folder, 'id' | 'createdAt'>) { const { data: row, error } = await supabase.from('folders').insert({ subject_id: data.subjectId, parent_folder_id: data.parentFolderId || null, name: data.name, description: data.description, display_order: data.displayOrder }).select().single(); if (error) fail(error); return this.mapFolder(row); }
+  async importFolders(sourceSubjectId: string, targetSubjectId: string, sourceFolderIds: string[], targetParentFolderId: string | null = null) {
+    const [sourceFolders, targetFolders] = await Promise.all([
+      this.getAllFolders(sourceSubjectId),
+      this.getAllFolders(targetSubjectId),
+    ]);
+    const sourceByParent = new Map<string, Folder[]>();
+    sourceFolders.forEach((folder) => {
+      const key = folder.parentFolderId || 'root';
+      sourceByParent.set(key, [...(sourceByParent.get(key) || []), folder]);
+    });
+    const createdIds: string[] = [];
+    const imported: Folder[] = [];
+    const skipped: Folder[] = [];
+    const targetNamesByParent = new Map<string, Set<string>>();
+    targetFolders.forEach((folder) => {
+      const key = folder.parentFolderId || 'root';
+      const names = targetNamesByParent.get(key) || new Set<string>();
+      names.add(folder.name.trim().toLowerCase());
+      targetNamesByParent.set(key, names);
+    });
+    const nextDisplayOrder = new Map<string, number>();
+    targetFolders.forEach((folder) => {
+      const key = folder.parentFolderId || 'root';
+      nextDisplayOrder.set(key, Math.max(nextDisplayOrder.get(key) || 0, folder.displayOrder || 0));
+    });
+
+    const copyTree = async (sourceFolder: Folder, parentFolderId: string | null) => {
+      const parentKey = parentFolderId || 'root';
+      const names = targetNamesByParent.get(parentKey) || new Set<string>();
+      const normalizedName = sourceFolder.name.trim().toLowerCase();
+      const existingFolder = targetFolders.find((folder) =>
+        (folder.parentFolderId || null) === parentFolderId && folder.name.trim().toLowerCase() === normalizedName
+      );
+      if (existingFolder) {
+        skipped.push(sourceFolder);
+        const children = sourceByParent.get(sourceFolder.id) || [];
+        for (const child of children) await copyTree(child, existingFolder.id);
+        return;
+      }
+
+      const displayOrder = (nextDisplayOrder.get(parentKey) || 0) + 1;
+      nextDisplayOrder.set(parentKey, displayOrder);
+      const created = await this.createFolder({
+        subjectId: targetSubjectId,
+        parentFolderId,
+        name: sourceFolder.name,
+        description: sourceFolder.description || '',
+        displayOrder,
+      });
+      createdIds.push(created.id);
+      imported.push(created);
+      names.add(normalizedName);
+      targetNamesByParent.set(parentKey, names);
+
+      const children = sourceByParent.get(sourceFolder.id) || [];
+      for (const child of children) await copyTree(child, created.id);
+    };
+
+    try {
+      const selectedFolders = sourceFolderIds
+        .map((id) => sourceFolders.find((folder) => folder.id === id))
+        .filter((folder): folder is Folder => !!folder);
+      for (const sourceFolder of selectedFolders) await copyTree(sourceFolder, targetParentFolderId);
+      return { imported, skipped };
+    } catch (error) {
+      for (const id of [...createdIds].reverse()) {
+        try { await this.deleteFolder(id); } catch { /* Preserve the original import error. */ }
+      }
+      throw error;
+    }
+  }
   async updateFolder(id: string, data: Partial<Folder>) { const { data: row, error } = await supabase.from('folders').update({ subject_id: data.subjectId, parent_folder_id: data.parentFolderId, name: data.name, description: data.description, display_order: data.displayOrder }).eq('id', id).select().single(); if (error) fail(error); return this.mapFolder(row); }
   async deleteFolder(id: string) { const { error } = await supabase.from('folders').delete().eq('id', id); if (error) fail(error); }
 
