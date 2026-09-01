@@ -95,12 +95,20 @@ export const Footer: React.FC<FooterProps> = () => {
         {/* Bottom Bar */}
         <div className="mt-12 pt-6 border-t border-border-subtle flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-content-muted">
           <p>© {new Date().getFullYear()} StudyZone MJCET. Open learning portal for student academic excellence.</p>
-          
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              
-            </div>
 
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-[11px] text-content-muted">
+              <span>Want to estimate your GPA? →</span>
+              <a
+                href="https://mjcet-gpa-estimator.vercel.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-brand-600 hover:text-brand-700 transition-colors font-medium"
+              >
+                <span>GPA Estimator</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
           </div>
         </div>
       </div>
