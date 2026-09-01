@@ -91,12 +91,7 @@ export const Footer: React.FC<FooterProps> = () => {
             </div>
           </div>
         </div>
-
-        {/* Bottom Bar */}
-        <div className="mt-12 pt-6 border-t border-border-subtle flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-content-muted">
-          <p>© {new Date().getFullYear()} StudyZone MJCET. Open learning portal for student academic excellence.</p>
-
-          <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-[11px] text-content-muted">
               <span>Want to estimate your GPA? →</span>
               <a
@@ -110,6 +105,11 @@ export const Footer: React.FC<FooterProps> = () => {
               </a>
             </div>
           </div>
+        {/* Bottom Bar */}
+        <div className="mt-12 pt-6 border-t border-border-subtle flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-content-muted">
+          <p>© {new Date().getFullYear()} StudyZone MJCET. Open learning portal for student academic excellence.</p>
+
+          
         </div>
       </div>
     </footer>
