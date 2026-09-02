@@ -69,13 +69,7 @@ export const Footer: React.FC<FooterProps> = () => {
                   <span className="font-mono">{settings.contactEmail || 'Contact email unavailable'}</span>
                 </a>
 
-                <a
-                  href={`tel:${settings.contactPhone || ''}`}
-                  className="flex items-center gap-2 hover:text-brand-600 transition-colors group"
-                >
-                  <FaWhatsapp size={14} color="currentColor" aria-hidden="true" />
-                  <span>{settings.contactPhone || 'Contact phone unavailable'}</span>
-                </a>
+
 
                 <a
                   href={settings.linkedInUrl || '#'}
