@@ -9,12 +9,14 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
 import { Badge } from '../components/ui/Badge';
 import { Folder, Search, Filter } from 'lucide-react';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 
 export const SubjectPage: React.FC = () => {
   const { subjectId } = useParams<{ subjectId: string }>();
   const { subject, rootFolders, isLoading, error, refetch } = useSubject(subjectId);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [folderQuery, setFolderQuery] = useState('');
+  const foldersRevealRef = useScrollReveal<HTMLDivElement>();
 
   if (isLoading) {
     return (
@@ -124,34 +126,36 @@ export const SubjectPage: React.FC = () => {
       </div>
 
       {/* Folders List/Grid */}
-      {filteredFolders.length === 0 ? (
-        <EmptyState
-          title={folderQuery ? "No matching folders" : "Coming Soon....."}
-          description={folderQuery ? `No folders match "${folderQuery}" in this subject.` : undefined}
-          actionLabel={folderQuery ? "Clear Filter" : undefined}
-          onAction={() => setFolderQuery('')}
-        />
-      ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredFolders.map((folder) => (
-            <FolderCard
-              key={folder.id}
-              folder={folder}
-              subjectId={subject.id}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-2.5">
-          {filteredFolders.map((folder) => (
-            <FolderRow
-              key={folder.id}
-              folder={folder}
-              subjectId={subject.id}
-            />
-          ))}
-        </div>
-      )}
+      <div ref={foldersRevealRef}>
+        {filteredFolders.length === 0 ? (
+          <EmptyState
+            title={folderQuery ? "No matching folders" : "Coming Soon....."}
+            description={folderQuery ? `No folders match "${folderQuery}" in this subject.` : undefined}
+            actionLabel={folderQuery ? "Clear Filter" : undefined}
+            onAction={() => setFolderQuery('')}
+          />
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredFolders.map((folder) => (
+              <FolderCard
+                key={folder.id}
+                folder={folder}
+                subjectId={subject.id}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {filteredFolders.map((folder) => (
+              <FolderRow
+                key={folder.id}
+                folder={folder}
+                subjectId={subject.id}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

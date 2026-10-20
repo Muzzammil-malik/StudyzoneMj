@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Mail, Linkedin, Heart, ExternalLink, ShieldCheck } from 'lucide-react';
-import { FaWhatsapp } from 'react-icons/fa6';
 import logo from '@/src/assets/SZ.png';
 import { contentService } from '../../services/contentService';
 import { AdminSettings } from '../../types/admin';
@@ -68,7 +67,6 @@ export const Footer: React.FC<FooterProps> = () => {
                   <Mail className="w-3.5 h-3.5 text-content-muted group-hover:text-brand-600" />
                   <span className="font-mono">{settings.contactEmail || 'Contact email unavailable'}</span>
                 </a>
-
 
 
                 <a

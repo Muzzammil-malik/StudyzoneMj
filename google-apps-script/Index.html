@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <script>
+      window.addEventListener('message', function (event) {
+        if (!event.data || event.data.type !== 'studyzone-drive-scan') return;
+
+        var requestId = event.data.requestId;
+        var folderId = event.data.folderId;
+        var accessToken = event.data.accessToken;
+        var targetWindow = event.source || window.parent || window.top;
+
+        console.info('[StudyZone Drive Scanner] scan request received', { requestId: requestId, folderId: folderId });
+        google.script.run
+          .withSuccessHandler(function (result) {
+            console.info('[StudyZone Drive Scanner] scan response ready', {
+              requestId: requestId,
+              success: result && result.success,
+              totalFiles: result && result.totalFiles,
+            });
+            targetWindow.postMessage({ type: 'studyzone-drive-result', requestId: requestId, result: result }, '*');
+          })
+          .withFailureHandler(function (error) {
+            console.error('[StudyZone Drive Scanner] Apps Script call failed', { requestId: requestId, message: error && error.message });
+            targetWindow.postMessage({
+              type: 'studyzone-drive-result',
+              requestId: requestId,
+              result: {
+                success: false,
+                error: {
+                  code: 'SCANNER_ERROR',
+                  message: (error && error.message) || 'The Drive scan could not be completed. Check Apps Script execution logs.',
+                },
+              },
+            }, '*');
+          })
+          .scanDriveFolder(folderId, accessToken);
+      });
+
+      console.info('[StudyZone Drive Scanner] bridge initialized');
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'studyzone-drive-ready' }, '*');
+        }
+      } catch (e) {}
+      try {
+        if (window.top && window.top !== window && window.top !== window.parent) {
+          window.top.postMessage({ type: 'studyzone-drive-ready' }, '*');
+        }
+      } catch (e) {}
+    </script>
+  </body>
+</html>

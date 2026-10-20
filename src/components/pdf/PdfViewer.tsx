@@ -115,6 +115,7 @@ const pageWindow = (center: number, count: number, radius = 3) =>
   new Set(pageNumbers(count).filter((page) => Math.abs(page - center) <= radius));
 
 export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder, folderHierarchy = [] }) => {
+  const isGoogleDrive = resource.storageProvider === 'google_drive' || Boolean(resource.driveFileId) || (resource.fileUrl && resource.fileUrl.includes('drive.google.com'));
   const viewerRootRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const pageContentRef = useRef<HTMLDivElement>(null);
@@ -129,7 +130,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isDocumentReady, setIsDocumentReady] = useState(false);
   const [renderedPages, setRenderedPages] = useState<Set<number>>(() => new Set([1, 2, 3]));
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => !isGoogleDrive && window.matchMedia('(min-width: 1024px)').matches);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [pdfError, setPdfError] = useState(false);
@@ -395,9 +396,51 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
     else await viewerRootRef.current?.requestFullscreen();
   };
 
+  const driveFileId = resource.driveFileId || (resource.fileUrl && resource.fileUrl.includes('/file/d/') ? resource.fileUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)?.[1] : undefined);
+  const previewUrl = driveFileId ? `https://drive.google.com/file/d/${encodeURIComponent(driveFileId)}/preview` : resource.fileUrl;
+
+  if (isGoogleDrive) {
+    return (
+      <div ref={viewerRootRef} id="academic-pdf-viewer-root" className="flex min-w-0 flex-col h-[calc(100vh-60px)] sm:h-[calc(100vh-64px)] bg-slate-100 overflow-hidden">
+        <PdfHeader
+          resource={resource}
+          zoomLevel={zoomLevel}
+          minZoom={minZoom}
+          maxZoom={maxZoom}
+          onZoomChange={updateZoom}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          isInfoOpen={isInfoOpen}
+          onToggleInfo={() => setIsInfoOpen((open) => !open)}
+        />
+        <div className="flex-1 flex min-w-0 overflow-hidden relative">
+          <div className="flex-1 flex flex-col min-w-0 h-full relative">
+            <div className="flex-1 min-h-0 w-full bg-slate-200/70 relative">
+              <iframe
+                src={previewUrl}
+                title={resource.name}
+                className="block h-full min-h-0 w-full border-0"
+                allow="autoplay"
+                allowFullScreen
+              />
+            </div>
+          </div>
+          <PdfInfoPanel
+            resource={resource}
+            subject={subject}
+            folder={folder}
+            folderHierarchy={folderHierarchy}
+            isOpen={isInfoOpen}
+            onClose={() => setIsInfoOpen(false)}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div ref={viewerRootRef} id="academic-pdf-viewer-root" className="flex min-w-0 flex-col h-[calc(100vh-60px)] sm:h-[calc(100vh-64px)] bg-slate-100 overflow-hidden">
-      <PdfHeader resource={resource} zoomLevel={zoomLevel} minZoom={minZoom} maxZoom={maxZoom} onZoomChange={updateZoom} isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} isInfoOpen={isInfoOpen} onToggleInfo={() => setIsInfoOpen((open) => !open)} onToggleSidebar={() => setIsSidebarOpen((open) => !open)} />
+      <PdfHeader resource={resource} zoomLevel={zoomLevel} minZoom={minZoom} maxZoom={maxZoom} onZoomChange={updateZoom} isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} isInfoOpen={isInfoOpen} onToggleInfo={() => setIsInfoOpen((open) => !open)} isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen((open) => !open)} />
       <Document
         file={resource.fileUrl}
         onLoadSuccess={({ numPages }) => { setPageCount(numPages); setIsDocumentReady(true); setPdfError(false); }}
@@ -407,9 +450,14 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ resource, subject, folder,
         className="flex-1 flex min-w-0 flex-col min-h-0"
       >
       <div className="flex-1 flex min-w-0 overflow-hidden relative">
-        {isSidebarOpen && <button type="button" aria-label="Close page thumbnails" onClick={() => setIsSidebarOpen(false)} className="absolute inset-0 z-20 bg-slate-900/20 lg:hidden" />}
-        <aside className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} absolute inset-y-0 left-0 z-30 w-56 shrink-0 border-r border-slate-200 bg-slate-50 transition-transform duration-200 lg:relative lg:translate-x-0`}>
-          <div className="px-4 py-3 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">Pages</div>
+        {isSidebarOpen && <button type="button" aria-label="Close page navigation" onClick={() => setIsSidebarOpen(false)} className="absolute inset-0 z-20 bg-slate-900/15 lg:hidden" />}
+        <aside id="pdf-page-navigation" aria-label="Page thumbnails" aria-hidden={!isSidebarOpen} inert={!isSidebarOpen} className={`absolute inset-y-0 left-0 z-30 w-56 max-w-[75vw] shrink-0 border-r border-slate-200 bg-slate-50 transition-[width,transform] duration-200 lg:relative ${isSidebarOpen ? 'translate-x-0 lg:w-56 lg:translate-x-0' : '-translate-x-full lg:w-0 lg:-translate-x-full'} overflow-hidden`}>
+          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Pages</h2>
+            <button type="button" onClick={() => setIsSidebarOpen(false)} aria-label="Close page navigation" className="rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900 lg:hidden">
+              <span aria-hidden="true">×</span>
+            </button>
+          </div>
           <div ref={thumbnailViewportRef} className="h-[calc(100%-42px)] overflow-y-auto p-3 space-y-3">
             {pageNumbers(pageCount).map((page) => <Thumbnail key={page} pageNumber={page} active={currentPage === page} rootRef={thumbnailViewportRef} onSelect={scrollToPage} />)}
           </div>

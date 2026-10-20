@@ -9,6 +9,22 @@ import { FeedbackItem } from '../types/feedback';
 import { AdminActivity, AdminSettings, DashboardStats } from '../types/admin';
 
 type Row = Record<string, any>;
+type DriveResourceInput = {
+  title: string;
+  description?: string;
+  subjectId: string;
+  folderId: string;
+  categoryId: string;
+  semesterId: string;
+  driveFileId: string;
+  fileName: string;
+  fileSize?: number | null;
+  pageCount?: number | null;
+  authorOrProfessor?: string | null;
+  academicYear?: string | null;
+  tags?: string[];
+  status?: 'draft' | 'published';
+};
 const fail = (error: { message: string } | null): never => { throw new Error(error?.message || 'Supabase request failed.'); };
 const stamp = (value?: string | null) => value || new Date().toISOString();
 
@@ -19,7 +35,44 @@ class ContentService {
   private mapCategory(row: Row): Category { return { id: row.id, name: row.name, description: row.description || '', displayOrder: row.display_order, active: row.active, iconName: row.icon_name || undefined, createdAt: stamp(row.created_at) }; }
   private mapSubject(row: Row, resourceCount = 0, folderCount = 0): Subject { return { id: row.id, name: row.name, code: row.code, semesterId: row.semester_id, semester: row.semester?.name, description: row.description || '', department: row.department || '', credits: row.credits || undefined, displayOrder: row.display_order, active: row.active, iconName: row.icon_name || undefined, colorTone: row.color_tone || 'blue', resourceCount, folderCount, createdAt: stamp(row.created_at) }; }
   private mapFolder(row: Row, itemCount?: number): Folder { return { id: row.id, subjectId: row.subject_id, parentFolderId: row.parent_folder_id, name: row.name, description: row.description || '', displayOrder: row.display_order, itemCount, createdAt: stamp(row.created_at) }; }
-  private async mapResource(row: Row): Promise<Resource> { const { data, error } = await supabase.storage.from(RESOURCE_BUCKET).createSignedUrl(row.file_path, 3600); if (error) fail(error); return { id: row.id, name: row.file_name || row.title, title: row.title, description: row.description || '', subjectId: row.subject_id, folderId: row.folder_id, categoryId: row.category_id, category: row.category?.name, semesterId: row.semester_id, semester: row.semester?.name, fileUrl: data.signedUrl, fileSize: row.file_size || undefined, mimeType: row.mime_type, pageCount: row.page_count || undefined, authorOrProfessor: row.author_or_professor || undefined, academicYear: row.academic_year || undefined, tags: row.tags || [], status: row.status, createdAt: stamp(row.created_at), downloadsCount: row.downloads_count }; }
+  private async mapResource(row: Row): Promise<Resource> {
+    const isDrive = row.storage_provider === 'google_drive' || Boolean(row.drive_file_id) || Boolean(row.file_path && row.file_path.startsWith('drive/'));
+    const driveFileId = row.drive_file_id || (row.file_path && row.file_path.startsWith('drive/') ? row.file_path.replace(/^drive\//, '') : undefined);
+    const driveViewUrl = row.drive_view_url || (driveFileId ? `https://drive.google.com/file/d/${encodeURIComponent(driveFileId)}/view` : undefined);
+    let fileUrl = '';
+    if (isDrive) {
+      fileUrl = driveViewUrl || '';
+    } else {
+      const { data, error } = await supabase.storage.from(RESOURCE_BUCKET).createSignedUrl(row.file_path, 3600);
+      if (error) fail(error);
+      fileUrl = data.signedUrl;
+    }
+    return {
+      id: row.id,
+      name: row.file_name || row.title,
+      title: row.title,
+      description: row.description || '',
+      subjectId: row.subject_id,
+      folderId: row.folder_id,
+      categoryId: row.category_id,
+      category: row.category?.name,
+      semesterId: row.semester_id,
+      semester: row.semester?.name,
+      fileUrl,
+      fileSize: row.file_size || undefined,
+      mimeType: row.mime_type,
+      pageCount: row.page_count || undefined,
+      authorOrProfessor: row.author_or_professor || undefined,
+      academicYear: row.academic_year || undefined,
+      tags: row.tags || [],
+      status: row.status,
+      createdAt: stamp(row.created_at),
+      downloadsCount: row.downloads_count,
+      storageProvider: isDrive ? 'google_drive' : 'supabase',
+      driveFileId,
+      driveViewUrl,
+    };
+  }
   private async resourceRows(query: (builder: any) => any = (builder) => builder) { const { data, error } = await query(supabase.from('resources').select('*, category:resource_categories(name), semester:semesters(name)')); if (error) fail(error); return (data || []) as Row[]; }
   private async activity(action: string, entityType: AdminActivity['entityType'], entityName: string) { const { data: { user } } = await supabase.auth.getUser(); if (user) await supabase.from('admin_activities').insert({ actor_id: user.id, action, entity_type: entityType, entity_name: entityName }); }
 
@@ -129,7 +182,139 @@ class ContentService {
   async getResource(id: string) { const rows = await this.resourceRows((q) => q.eq('id', id)); return rows[0] ? this.mapResource(rows[0]) : null; }
   async createResource(data: Omit<Resource, 'id' | 'createdAt'>) { const { data: row, error } = await supabase.from('resources').insert({ title: data.title || data.name, description: data.description, subject_id: data.subjectId, folder_id: data.folderId, category_id: data.categoryId, semester_id: data.semesterId, file_path: data.fileUrl, file_name: data.name, file_size: data.fileSize, mime_type: data.mimeType || 'application/pdf', page_count: data.pageCount, author_or_professor: data.authorOrProfessor, academic_year: data.academicYear, tags: data.tags || [], status: data.status || 'draft' }).select('*, category:resource_categories(name), semester:semesters(name)').single(); if (error) fail(error); return this.mapResource(row); }
   async updateResource(id: string, data: Partial<Resource>) { const update: Row = {}; if (data.name || data.title) { update.title = data.title || data.name; update.file_name = data.name || data.title; } if (data.description !== undefined) update.description = data.description; if (data.subjectId) update.subject_id = data.subjectId; if (data.folderId) update.folder_id = data.folderId; if (data.categoryId) update.category_id = data.categoryId; if (data.semesterId) update.semester_id = data.semesterId; if (data.fileSize !== undefined) update.file_size = data.fileSize; if (data.pageCount !== undefined) update.page_count = data.pageCount; if (data.authorOrProfessor !== undefined) update.author_or_professor = data.authorOrProfessor; if (data.academicYear !== undefined) update.academic_year = data.academicYear; if (data.tags) update.tags = data.tags; if (data.status) update.status = data.status; const { data: row, error } = await supabase.from('resources').update(update).eq('id', id).select('*, category:resource_categories(name), semester:semesters(name)').single(); if (error) fail(error); return this.mapResource(row); }
-  async deleteResource(id: string) { const rows = await this.rows('resources', (q) => q.select('*').eq('id', id)); const path = rows[0]?.file_path; const { error } = await supabase.from('resources').delete().eq('id', id); if (error) fail(error); if (path) await supabase.storage.from(RESOURCE_BUCKET).remove([path]); }
+  async deleteResource(id: string) {
+    const rows = await this.rows('resources', (q) => q.select('*').eq('id', id));
+    const row = rows[0];
+    const path = row?.file_path;
+    const isDrive = row?.storage_provider === 'google_drive' || Boolean(row?.drive_file_id) || Boolean(path && path.startsWith('drive/'));
+    const { error } = await supabase.from('resources').delete().eq('id', id);
+    if (error) fail(error);
+    if (path && !isDrive) await supabase.storage.from(RESOURCE_BUCKET).remove([path]);
+  }
+
+  async importDriveResources(items: DriveResourceInput[]): Promise<{
+    imported: Resource[];
+    skipped: Array<{ id: string; name: string; reason: string }>;
+    failed: Array<{ id: string; name: string; error: string }>;
+  }> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) throw new Error('Authentication required.');
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
+    if (profile?.role !== 'admin') throw new Error('Only StudyZone administrators can import resources.');
+
+    const imported: Resource[] = [];
+    const skipped: Array<{ id: string; name: string; reason: string }> = [];
+    const failed: Array<{ id: string; name: string; error: string }> = [];
+
+    // Pre-check for already imported Drive files
+    const existingIds = new Set<string>();
+    try {
+      const { data: existingRows } = await supabase
+        .from('resources')
+        .select('file_path');
+      (existingRows || []).forEach((r: any) => {
+        if (r.file_path && r.file_path.startsWith('drive/')) {
+          existingIds.add(r.file_path.replace(/^drive\//, ''));
+        }
+      });
+    } catch {
+      // Ignore pre-check query error; individual insert checks will guard
+    }
+
+    for (const item of items) {
+      if (existingIds.has(item.driveFileId)) {
+        skipped.push({ id: item.driveFileId, name: item.fileName, reason: 'Already imported previously' });
+        continue;
+      }
+
+      const filePath = `drive/${item.driveFileId}`;
+      const payloadWithDriveCols: Row = {
+        title: item.title || item.fileName.replace(/\.pdf$/i, ''),
+        description: item.description || '',
+        subject_id: item.subjectId,
+        folder_id: item.folderId,
+        category_id: item.categoryId,
+        semester_id: item.semesterId,
+        file_path: filePath,
+        file_name: item.fileName,
+        file_size: item.fileSize || null,
+        mime_type: 'application/pdf',
+        author_or_professor: item.authorOrProfessor || null,
+        academic_year: item.academicYear || null,
+        tags: item.tags || [],
+        page_count: item.pageCount ?? null,
+        status: item.status || 'published',
+        storage_provider: 'google_drive',
+        drive_file_id: item.driveFileId,
+        drive_view_url: `https://drive.google.com/file/d/${encodeURIComponent(item.driveFileId)}/view`,
+        created_by: session.user.id,
+      };
+
+      let insertResult = await supabase
+        .from('resources')
+        .insert(payloadWithDriveCols)
+        .select('*, category:resource_categories(name), semester:semesters(name)')
+        .single();
+
+      // If new columns are missing because the SQL migration has not run yet, fallback to base columns
+      if (insertResult.error && (insertResult.error.message.includes('drive_file_id') || insertResult.error.message.includes('storage_provider') || insertResult.error.code === '42703')) {
+        const payloadBase: Row = {
+          title: item.title || item.fileName.replace(/\.pdf$/i, ''),
+          description: item.description || '',
+          subject_id: item.subjectId,
+          folder_id: item.folderId,
+          category_id: item.categoryId,
+          semester_id: item.semesterId,
+          file_path: filePath,
+          file_name: item.fileName,
+          file_size: item.fileSize || null,
+          mime_type: 'application/pdf',
+          author_or_professor: item.authorOrProfessor || null,
+          academic_year: item.academicYear || null,
+          tags: item.tags || [],
+          page_count: item.pageCount ?? null,
+          status: item.status || 'published',
+          created_by: session.user.id,
+        };
+        insertResult = await supabase
+          .from('resources')
+          .insert(payloadBase)
+          .select('*, category:resource_categories(name), semester:semesters(name)')
+          .single();
+      }
+
+      if (insertResult.error) {
+        if (insertResult.error.code === '23505') {
+          existingIds.add(item.driveFileId);
+          skipped.push({ id: item.driveFileId, name: item.fileName, reason: 'Duplicate resource detected' });
+        } else {
+          failed.push({ id: item.driveFileId, name: item.fileName, error: insertResult.error.message });
+        }
+      } else if (insertResult.data) {
+        existingIds.add(item.driveFileId);
+        const mapped = await this.mapResource(insertResult.data);
+        imported.push(mapped);
+      }
+    }
+
+    if (imported.length > 0) {
+      await this.activity('Imported Google Drive resources', 'resource', `${imported.length} files`);
+    }
+
+    return { imported, skipped, failed };
+  }
+
+  async createDriveResource(item: DriveResourceInput): Promise<Resource> {
+    const result = await this.importDriveResources([item]);
+    if (result.imported.length === 1) return result.imported[0];
+    if (result.skipped.length) {
+      throw new Error(`"${result.skipped[0].name}" has already been added from Google Drive.`);
+    }
+    if (result.failed.length) throw new Error(result.failed[0].error);
+    throw new Error('The Google Drive resource was not saved.');
+  }
+
   async uploadResource(file: File, metadata: any) { if (file.type !== 'application/pdf' || !file.name.toLowerCase().endsWith('.pdf')) throw new Error('Only PDF files are allowed.'); if (file.size > 50 * 1024 * 1024) throw new Error('PDF must be smaller than 50 MB.'); const id = crypto.randomUUID(); const path = `resources/${metadata.semesterId}/${metadata.subjectId}/${metadata.folderId}/${id}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`; const { error } = await supabase.storage.from(RESOURCE_BUCKET).upload(path, file, { contentType: 'application/pdf', upsert: false }); if (error) fail(error); try { return await this.createResource({ ...metadata, id, name: file.name, title: metadata.title || file.name, fileUrl: path, fileSize: file.size, mimeType: 'application/pdf' } as any); } catch (error) { await supabase.storage.from(RESOURCE_BUCKET).remove([path]); throw error; } }
   async replaceResourceFile(resourceId: string, file: File) { if (file.type !== 'application/pdf' || !file.name.toLowerCase().endsWith('.pdf')) throw new Error('Only PDF files are allowed.'); if (file.size > 50 * 1024 * 1024) throw new Error('PDF must be smaller than 50 MB.'); const rows = await this.rows('resources', (q) => q.select('*').eq('id', resourceId)); const resource = rows[0]; if (!resource) throw new Error('Resource not found.'); const path = `resources/${resource.semester_id}/${resource.subject_id}/${resource.folder_id}/${resourceId}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`; const { error: uploadError } = await supabase.storage.from(RESOURCE_BUCKET).upload(path, file, { contentType: 'application/pdf', upsert: false }); if (uploadError) fail(uploadError); try { const { error } = await supabase.from('resources').update({ file_path: path, file_name: file.name, file_size: file.size, mime_type: 'application/pdf' }).eq('id', resourceId); if (error) fail(error); if (resource.file_path && resource.file_path !== path) await supabase.storage.from(RESOURCE_BUCKET).remove([resource.file_path]); return this.getResource(resourceId); } catch (error) { await supabase.storage.from(RESOURCE_BUCKET).remove([path]); throw error; } }
   async getResourcesByCategory(categoryId: string, semesterFilter?: string, subjectFilter?: string) { return this.getAllResources({ categoryId: categoryId === 'all' || categoryId === 'All Resources' ? undefined : categoryId, semesterId: semesterFilter === 'All Semesters' ? undefined : semesterFilter, subjectId: subjectFilter === 'all' ? undefined : subjectFilter, status: 'published' }); }

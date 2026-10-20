@@ -137,8 +137,22 @@ export const FileCard: React.FC<FileCardProps> = ({ resource, subjectName }) => 
       </div>
 
       <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 mt-auto">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
           <span className="font-medium text-slate-600">{formatBytes(resource.fileSize)}</span>
+          {resource.academicYear && (
+            <>
+              <span className="text-slate-300">•</span>
+              <span className="text-slate-500 font-medium">{resource.academicYear}</span>
+            </>
+          )}
+          {resource.authorOrProfessor && (
+            <>
+              <span className="text-slate-300">•</span>
+              <span className="text-slate-500 truncate max-w-[120px]" title={resource.authorOrProfessor}>
+                {resource.authorOrProfessor}
+              </span>
+            </>
+          )}
         </div>
 
         <Link
@@ -223,6 +237,12 @@ export const FileRow: React.FC<FileCardProps> = ({ resource, subjectName }) => {
           </h4>
           <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
             <span className="font-medium text-slate-600">{formatBytes(resource.fileSize)}</span>
+            {resource.academicYear && (
+              <>
+                <span className="text-slate-300 hidden sm:inline">•</span>
+                <span className="text-slate-500 font-medium hidden sm:inline">{resource.academicYear}</span>
+              </>
+            )}
             {resource.authorOrProfessor && (
               <>
                 <span className="text-slate-300 hidden md:inline">•</span>

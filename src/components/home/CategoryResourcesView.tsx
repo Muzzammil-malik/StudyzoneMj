@@ -18,6 +18,7 @@ import { Resource } from '../../types/resource';
 import { Subject } from '../../types/subject';
 import { contentService } from '../../services/contentService';
 import { useIsBookmarked } from '../../hooks/useBookmarks';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
 
 interface CategoryResourcesViewProps {
   categoryName: string;
@@ -34,7 +35,7 @@ const ResourceRow: React.FC<{
   const { isBookmarked, toggle } = useIsBookmarked(resource.id);
 
   return (
-    <div className="p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 hover:border-blue-400 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+    <div className="resource-row-reveal p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 hover:border-blue-400 hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
       <div className="flex items-start gap-3.5 min-w-0">
         <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center shrink-0 mt-0.5">
           <FileText className="w-5 h-5" />
@@ -113,6 +114,7 @@ export const CategoryResourcesView: React.FC<CategoryResourcesViewProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubjectId, setSelectedSubjectId] = useState('all');
+  const resourcesRevealRef = useScrollReveal<HTMLDivElement>();
 
   useEffect(() => {
     const fetchList = async () => {
@@ -216,7 +218,7 @@ export const CategoryResourcesView: React.FC<CategoryResourcesViewProps> = ({
       </div>
 
       {/* Resource Rows List */}
-      <div className="space-y-3">
+      <div ref={resourcesRevealRef} className="space-y-3 scroll-reveal-items">
         {isLoading ? (
           <div className="p-8 text-center text-xs text-slate-400 bg-white rounded-2xl border border-slate-200/80">
             Loading {categoryName}...

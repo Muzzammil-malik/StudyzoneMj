@@ -41,7 +41,12 @@ export const RootLayout: React.FC = () => {
         <Navbar onOpenSearch={() => openSearch()} />
 
         <main className="flex-1 flex flex-col relative z-10">
-          <Outlet context={{ openSearch }} />
+          <div
+            key={isPdfViewerPage ? 'pdf-viewer' : location.pathname}
+            className={`flex flex-col flex-1 ${isPdfViewerPage ? '' : 'page-transition'}`}
+          >
+            <Outlet context={{ openSearch }} />
+          </div>
         </main>
 
         {!isPdfViewerPage && (

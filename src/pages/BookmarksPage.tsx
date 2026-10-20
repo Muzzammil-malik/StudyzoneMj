@@ -6,10 +6,12 @@ import { FileRow } from '../components/files/FileCard';
 import { ResourceListSkeleton } from '../components/ui/Skeletons';
 import { NoBookmarksEmpty } from '../components/ui/EmptyState';
 import { Bookmark, Sparkles } from 'lucide-react';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 
 export const BookmarksPage: React.FC = () => {
   const { bookmarks, isLoading } = useBookmarks();
   const navigate = useNavigate();
+  const bookmarksRevealRef = useScrollReveal<HTMLDivElement>();
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 w-full">
@@ -51,7 +53,7 @@ export const BookmarksPage: React.FC = () => {
       ) : bookmarks.length === 0 ? (
         <NoBookmarksEmpty onBrowse={() => navigate('/')} />
       ) : (
-        <div className="space-y-2.5">
+        <div ref={bookmarksRevealRef} className="space-y-2.5">
           {bookmarks.map(({ bookmark, resource, subject }) => (
             <FileRow
               key={bookmark.id}

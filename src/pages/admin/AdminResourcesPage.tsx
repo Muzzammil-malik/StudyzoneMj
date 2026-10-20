@@ -16,6 +16,8 @@ import {
   BookOpen,
   Layers,
   Folder as FolderIcon,
+  CloudDownload,
+  HardDrive,
 } from 'lucide-react';
 import { contentService } from '../../services/contentService';
 import { Resource } from '../../types/resource';
@@ -26,6 +28,8 @@ import { useSemesters } from '../../hooks/useSemesters';
 import { useAdmin } from '../../layouts/AdminLayout';
 import { DeleteConfirmModal } from '../../components/admin/DeleteConfirmModal';
 import { ResourcePreviewModal } from '../../components/admin/ResourcePreviewModal';
+import { DriveImportModal } from '../../components/admin/DriveImportModal';
+import { parseDriveFileId } from '../../services/googleDriveImportService';
 
 export const AdminResourcesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -50,8 +54,11 @@ export const AdminResourcesPage: React.FC = () => {
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [resourceToDelete, setResourceToDelete] = useState<Resource | null>(null);
   const [previewResource, setPreviewResource] = useState<Resource | null>(null);
+  const [isDriveImportOpen, setIsDriveImportOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [storageDestination, setStorageDestination] = useState<'supabase' | 'google_drive'>('supabase');
+  const [driveResourceUrl, setDriveResourceUrl] = useState('');
 
   // Form State
   const [formData, setFormData] = useState({
@@ -116,6 +123,8 @@ export const AdminResourcesPage: React.FC = () => {
 
     setEditingResource(null);
     setSelectedFile(null);
+    setStorageDestination('supabase');
+    setDriveResourceUrl('');
     setFormData({
       name: '',
       description: '',
@@ -136,6 +145,8 @@ export const AdminResourcesPage: React.FC = () => {
   const handleOpenEdit = (res: Resource) => {
     setEditingResource(res);
     setSelectedFile(null);
+    setStorageDestination('supabase');
+    setDriveResourceUrl('');
     setFormData({
       name: res.name,
       description: res.description || '',
@@ -161,6 +172,19 @@ export const AdminResourcesPage: React.FC = () => {
     }
     if (!formData.subjectId) {
       toast.error('Please assign a subject.');
+      return;
+    }
+    const driveFileId = storageDestination === 'google_drive' ? parseDriveFileId(driveResourceUrl) : null;
+    if (!editingResource && storageDestination === 'google_drive' && !driveResourceUrl.trim()) {
+      toast.error('Google Drive Resource Link is required.');
+      return;
+    }
+    if (!editingResource && storageDestination === 'google_drive' && !driveFileId) {
+      toast.error('Enter a valid HTTPS Google Drive file link, such as drive.google.com/file/d/FILE_ID/view or drive.google.com/open?id=FILE_ID.');
+      return;
+    }
+    if (!editingResource && storageDestination === 'supabase' && !selectedFile) {
+      toast.error('Please choose a PDF file to upload.');
       return;
     }
 
@@ -193,10 +217,6 @@ export const AdminResourcesPage: React.FC = () => {
         status: formData.status,
       };
 
-      if (!editingResource && !selectedFile) {
-        throw new Error('Please choose a PDF file to upload.');
-      }
-
       if (editingResource && selectedFile) {
         await contentService.replaceResourceFile(editingResource.id, selectedFile);
       }
@@ -204,6 +224,24 @@ export const AdminResourcesPage: React.FC = () => {
       if (editingResource) {
         await contentService.updateResource(editingResource.id, payload);
         toast.success(`Updated resource "${payload.name}"`);
+      } else if (storageDestination === 'google_drive' && driveFileId) {
+        const fileName = payload.name.toLowerCase().endsWith('.pdf') ? payload.name : `${payload.name}.pdf`;
+        await contentService.createDriveResource({
+          title: payload.name,
+          description: payload.description,
+          subjectId: payload.subjectId,
+          folderId: payload.folderId,
+          categoryId: payload.categoryId,
+          semesterId: payload.semesterId,
+          driveFileId,
+          fileName,
+          pageCount: payload.pageCount,
+          authorOrProfessor: payload.authorOrProfessor,
+          academicYear: payload.academicYear,
+          tags: payload.tags,
+          status: payload.status,
+        });
+        toast.success(`Added Google Drive resource "${fileName}"`);
       } else {
         await contentService.uploadResource(selectedFile as File, {
           ...payload,
@@ -288,14 +326,24 @@ export const AdminResourcesPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => handleOpenCreate()}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-2xs transition-colors cursor-pointer self-start sm:self-auto"
-        >
-          <FileUp className="w-4 h-4" />
-          <span>Upload New Resource</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setIsDriveImportOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+          >
+            <CloudDownload className="w-4 h-4" />
+            <span>Import from Google Drive</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleOpenCreate()}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+          >
+            <FileUp className="w-4 h-4" />
+            <span>Upload New Resource</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Toolbar */}
@@ -509,6 +557,65 @@ export const AdminResourcesPage: React.FC = () => {
 
             <form onSubmit={handleSaveResource} className="p-6 space-y-4 overflow-y-auto flex-1">
               {!editingResource && (
+                <fieldset className="space-y-2">
+                  <legend className="block text-xs font-semibold text-slate-700">Storage destination</legend>
+                  <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Storage destination">
+                    <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${storageDestination === 'supabase' ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
+                      <input
+                        type="radio"
+                        name="storageDestination"
+                        value="supabase"
+                        checked={storageDestination === 'supabase'}
+                        onChange={() => {
+                          setStorageDestination('supabase');
+                          setDriveResourceUrl('');
+                        }}
+                        className="sr-only"
+                      />
+                      <HardDrive className="h-4 w-4" aria-hidden="true" />
+                      Supabase
+                    </label>
+                    <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${storageDestination === 'google_drive' ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
+                      <input
+                        type="radio"
+                        name="storageDestination"
+                        value="google_drive"
+                        checked={storageDestination === 'google_drive'}
+                        onChange={() => {
+                          setStorageDestination('google_drive');
+                          setSelectedFile(null);
+                        }}
+                        className="sr-only"
+                      />
+                      <CloudDownload className="h-4 w-4" aria-hidden="true" />
+                      Google Drive
+                    </label>
+                  </div>
+                </fieldset>
+              )}
+
+              {!editingResource && storageDestination === 'google_drive' && (
+                <div>
+                  <label htmlFor="google-drive-resource-link" className="mb-1 block text-xs font-semibold text-slate-700">
+                    Google Drive Resource Link *
+                  </label>
+                  <input
+                    id="google-drive-resource-link"
+                    type="text"
+                    inputMode="url"
+                    value={driveResourceUrl}
+                    onChange={(event) => setDriveResourceUrl(event.target.value)}
+                    placeholder="Paste the Google Drive link here..."
+                    aria-describedby="google-drive-resource-help"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  <p id="google-drive-resource-help" className="mt-1 text-[11px] text-slate-500">
+                    Use a Drive file link. Google Drive sharing permissions are not changed; readers still need access to the file.
+                  </p>
+                </div>
+              )}
+
+              {!editingResource && storageDestination === 'supabase' && (
                 <label className="block p-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-center space-y-2 hover:border-blue-400 transition-colors cursor-pointer">
                   <UploadCloud className="w-8 h-8 text-blue-500 mx-auto" />
                   <div>
@@ -754,6 +861,17 @@ export const AdminResourcesPage: React.FC = () => {
           resource={previewResource}
           subjectName={getSubjectName(previewResource.subjectId)}
           folderName={getFolderName(previewResource.folderId)}
+        />
+      )}
+
+      {isDriveImportOpen && (
+        <DriveImportModal
+          subjects={subjects}
+          folders={allFolders}
+          categories={categories}
+          semesters={semesters}
+          onClose={() => setIsDriveImportOpen(false)}
+          onImportComplete={loadData}
         />
       )}
     </div>

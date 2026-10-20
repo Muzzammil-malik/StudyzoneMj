@@ -70,7 +70,6 @@ export const NoBookmarksEmpty: React.FC<{ onBrowse?: () => void }> = ({ onBrowse
 export const EmptyFolderState: React.FC = () => (
   <EmptyState
     icon={FileQuestion}
-    title="This folder is empty"
-    description="No notes or subfolders have been assigned to this unit yet. Check back soon or verify with your class representative."
+    title="Comming Soon..."
   />
 );

@@ -9,6 +9,7 @@ import { FolderListSkeleton, ResourceListSkeleton } from '../components/ui/Skele
 import { EmptyFolderState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
 import { Folder as FolderIcon, FileText, Search } from 'lucide-react';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 
 export const FolderPage: React.FC = () => {
   const { subjectId, folderId } = useParams<{ subjectId: string; folderId: string }>();
@@ -25,6 +26,8 @@ export const FolderPage: React.FC = () => {
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [filterQuery, setFilterQuery] = useState('');
+  const subfoldersRevealRef = useScrollReveal<HTMLElement>();
+  const resourcesRevealRef = useScrollReveal<HTMLElement>();
 
   if (isLoading) {
     return (
@@ -123,7 +126,7 @@ export const FolderPage: React.FC = () => {
 
       {/* Subfolders Section */}
       {subfolders.length > 0 && (
-        <section className="space-y-3">
+        <section ref={subfoldersRevealRef} className="space-y-3">
           <div className="flex items-center gap-2">
             <FolderIcon className="w-4 h-4 text-amber-500" />
             <h2 className="font-serif font-bold text-base sm:text-lg text-slate-900">
@@ -160,7 +163,7 @@ export const FolderPage: React.FC = () => {
 
       {/* PDF Files / Resources Section */}
       {resources.length > 0 && (
-        <section className="space-y-3 pt-2">
+        <section ref={resourcesRevealRef} className="space-y-3 pt-2">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-rose-500" />
             <h2 className="font-serif font-bold text-base sm:text-lg text-slate-900">

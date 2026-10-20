@@ -23,6 +23,7 @@ import { SubjectListSkeleton } from '../components/ui/Skeletons';
 import { ErrorState } from '../components/ui/ErrorState';
 import { EmptyState } from '../components/ui/EmptyState';
 import { CategoryResourcesView } from '../components/home/CategoryResourcesView';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 
 interface OutletContextType {
   openSearch: (initialQuery?: string) => void;
@@ -37,6 +38,10 @@ export const HomePage: React.FC = () => {
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All Resources');
   const [selectedSemester, setSelectedSemester] = useState<string>('All Semesters');
+  const heroRevealRef = useScrollReveal<HTMLElement>();
+  const categoryRevealRef = useScrollReveal<HTMLElement>();
+  const subjectCardsRevealRef = useScrollReveal<HTMLDivElement>();
+  const recentRevealRef = useScrollReveal<HTMLElement>();
 
   // Map icon strings to Lucide components
   const getCategoryIcon = (name?: string, iconName?: string) => {
@@ -117,7 +122,7 @@ export const HomePage: React.FC = () => {
       {/* ============================================================ */}
       {/* 1. HERO SECTION (MATCHING REFERENCE IMAGE) */}
       {/* ============================================================ */}
-      <section className="text-center space-y-6 max-w-4xl mx-auto pt-2 sm:pt-6">
+      <section ref={heroRevealRef} className="text-center space-y-6 max-w-4xl mx-auto pt-2 sm:pt-6">
         {/* Top Pill Badge with Blue Bullet Dot */}
         <div className="inline-flex items-center gap-2 px-3.0 py-1 rounded-full bg-[#EFF6FF] text-[#2563EB] text-[10px] sm:text-xs font-semibold tracking-wider uppercase border border-blue-100 shadow-2xs">
           <span className="w-2 h-2 rounded-full bg-[#2563EB] shrink-0" />
@@ -252,7 +257,7 @@ export const HomePage: React.FC = () => {
       {/* 2. DYNAMIC CONTENT: CATEGORY VIEW vs SUBJECTS CURRICULUM */}
       {/* ============================================================ */}
       {selectedCategory !== 'All Resources' ? (
-        <section id="category-explorer-section">
+        <section ref={categoryRevealRef} id="category-explorer-section">
           <CategoryResourcesView
             categoryName={selectedCategory}
             categoryId={selectedCategoryObj?.id || ''}
@@ -293,7 +298,10 @@ export const HomePage: React.FC = () => {
               onAction={() => setSelectedSemester('All Semesters')}
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+            <div
+              ref={subjectCardsRevealRef}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 scroll-reveal-stagger"
+            >
               {filteredSubjects.map((subject) => (
                 <SubjectCard key={subject.id} subject={subject} />
               ))}
@@ -306,7 +314,7 @@ export const HomePage: React.FC = () => {
       {/* 3. RECENTLY VIEWED (Contextual) */}
       {/* ============================================================ */}
       {recents.length > 0 && selectedCategory === 'All Resources' && (
-        <section id="recently-viewed-section" className="space-y-3 pt-2">
+        <section ref={recentRevealRef} id="recently-viewed-section" className="space-y-3 pt-2">
           <div className="flex items-center justify-between pb-1 border-b border-slate-200/70">
             <h2 className="font-serif text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
               <Clock className="w-4 h-4 text-blue-600" />

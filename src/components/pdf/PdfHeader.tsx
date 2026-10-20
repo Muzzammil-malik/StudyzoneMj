@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bookmark, Download, Share2, ZoomIn, ZoomOut, Maximize2, Minimize2, Info, PanelLeft } from 'lucide-react';
+import { ArrowLeft, Bookmark, Download, Share2, ZoomIn, ZoomOut, Maximize2, Minimize2, Info, PanelLeft, ExternalLink } from 'lucide-react';
 import { Resource } from '../../types/resource';
 import { useIsBookmarked } from '../../hooks/useBookmarks';
 import { useToast } from '../ui/Toast';
@@ -17,6 +17,7 @@ interface PdfHeaderProps {
   isInfoOpen: boolean;
   onToggleInfo: () => void;
   onToggleSidebar?: () => void;
+  isSidebarOpen?: boolean;
 }
 
 export const PdfHeader: React.FC<PdfHeaderProps> = ({
@@ -30,10 +31,13 @@ export const PdfHeader: React.FC<PdfHeaderProps> = ({
   isInfoOpen,
   onToggleInfo,
   onToggleSidebar,
+  isSidebarOpen = false,
 }) => {
   const navigate = useNavigate();
   const { isBookmarked, toggle: toggleBookmark } = useIsBookmarked(resource.id);
   const { showToast } = useToast();
+  const isGoogleDrive = resource.storageProvider === 'google_drive' || Boolean(resource.driveFileId) || (resource.fileUrl && resource.fileUrl.includes('drive.google.com'));
+  const driveUrl = resource.driveViewUrl || (resource.driveFileId ? `https://drive.google.com/file/d/${encodeURIComponent(resource.driveFileId)}/view` : resource.fileUrl);
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
@@ -60,10 +64,12 @@ export const PdfHeader: React.FC<PdfHeaderProps> = ({
   const handleDownload = async () => {
     try {
       await downloadResource(resource);
-      showToast(`Downloading "${resource.name}"`, 'info');
+      if (!isGoogleDrive) {
+        showToast(`Downloading "${resource.name}"`, 'info');
+      }
     } catch (error) {
       console.error('PDF download failed', error);
-      showToast('Unable to download this PDF.', 'error');
+      showToast('Unable to open this PDF.', 'error');
     }
   };
 
@@ -89,50 +95,71 @@ export const PdfHeader: React.FC<PdfHeaderProps> = ({
           <ArrowLeft className="w-4.5 h-4.5" />
         </button>
 
-        <button
-          type="button"
-          onClick={onToggleSidebar}
-          aria-label="Toggle page thumbnails"
-          className="p-2 text-slate-600 hover:text-slate-950 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer shrink-0"
-        >
-          <PanelLeft className="w-4 h-4" />
-        </button>
+        {onToggleSidebar && (
+          <button
+            type="button"
+            onClick={onToggleSidebar}
+            aria-label="Toggle page navigation"
+            aria-expanded={isSidebarOpen}
+            aria-controls="pdf-page-navigation"
+            className={`p-2 rounded-lg transition-colors cursor-pointer shrink-0 ${isSidebarOpen ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100'}`}
+          >
+            <PanelLeft className="w-4 h-4" />
+          </button>
+        )}
 
         <div className="min-w-0">
           <h1 className="font-sans font-semibold text-sm sm:text-base text-slate-900 truncate leading-snug">
             {resource.name}
           </h1>
-          <div className="text-[11px] text-slate-400 truncate hidden sm:block">
-            {resource.authorOrProfessor ? `${resource.authorOrProfessor} • ` : ''}
-            {resource.pageCount ? `${resource.pageCount} Pages` : 'PDF Document'}
+          <div className="text-[11px] text-slate-400 truncate hidden sm:flex items-center gap-1.5">
+            {resource.authorOrProfessor ? <span>{resource.authorOrProfessor} • </span> : null}
+            {resource.academicYear ? <span>{resource.academicYear} • </span> : null}
+            {isGoogleDrive ? (
+              <span className="text-blue-600 font-medium">Google Drive PDF</span>
+            ) : (
+              <span>{resource.pageCount ? `${resource.pageCount} Pages` : 'PDF Document'}</span>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Center Zoom Controls (Desktop) */}
-      <div className="hidden md:flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-lg p-0.5 text-xs text-slate-600">
-        <button
-          type="button"
-          onClick={() => onZoomChange(Math.max(minZoom, zoomLevel - 0.15))}
-          disabled={zoomLevel <= minZoom}
-          aria-label="Zoom out"
-          className="p-1.5 hover:bg-white hover:text-slate-900 rounded disabled:opacity-40 transition-colors cursor-pointer"
+      {/* Center Zoom Controls (Desktop for Canvas PDF) or Drive Badge */}
+      {!isGoogleDrive ? (
+        <div className="hidden md:flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-lg p-0.5 text-xs text-slate-600">
+          <button
+            type="button"
+            onClick={() => onZoomChange(Math.max(minZoom, zoomLevel - 0.15))}
+            disabled={zoomLevel <= minZoom}
+            aria-label="Zoom out"
+            className="p-1.5 hover:bg-white hover:text-slate-900 rounded disabled:opacity-40 transition-colors cursor-pointer"
+          >
+            <ZoomOut className="w-3.5 h-3.5" />
+          </button>
+          <span className="px-2 font-mono font-medium text-[11px] min-w-[45px] text-center">
+            {Math.round(zoomLevel * 100)}%
+          </span>
+          <button
+            type="button"
+            onClick={() => onZoomChange(Math.min(maxZoom, zoomLevel + 0.15))}
+            disabled={zoomLevel >= maxZoom}
+            aria-label="Zoom in"
+            className="p-1.5 hover:bg-white hover:text-slate-900 rounded disabled:opacity-40 transition-colors cursor-pointer"
+          >
+            <ZoomIn className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : (
+        <a
+          href={driveUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs font-semibold transition-colors"
         >
-          <ZoomOut className="w-3.5 h-3.5" />
-        </button>
-        <span className="px-2 font-mono font-medium text-[11px] min-w-[45px] text-center">
-          {Math.round(zoomLevel * 100)}%
-        </span>
-        <button
-          type="button"
-          onClick={() => onZoomChange(Math.min(maxZoom, zoomLevel + 0.15))}
-          disabled={zoomLevel >= maxZoom}
-          aria-label="Zoom in"
-          className="p-1.5 hover:bg-white hover:text-slate-900 rounded disabled:opacity-40 transition-colors cursor-pointer"
-        >
-          <ZoomIn className="w-3.5 h-3.5" />
-        </button>
-      </div>
+          <span>Open in Google Drive</span>
+          <ExternalLink className="w-3.5 h-3.5" />
+        </a>
+      )}
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">

@@ -85,6 +85,15 @@ export const PdfInfoPanel: React.FC<PdfInfoPanelProps> = ({
             <span className="font-semibold text-slate-800 truncate">{formatBytes(resource.fileSize)}</span>
           </div>
 
+          {resource.semester && (
+            <div className="flex items-center justify-between py-1 text-slate-600 gap-2">
+              <span className="flex items-center gap-1.5 text-slate-500 shrink-0">
+                <BookOpen className="w-3.5 h-3.5 shrink-0" /> Semester
+              </span>
+              <span className="font-semibold text-slate-800 truncate">{resource.semester}</span>
+            </div>
+          )}
+
           <div className="flex items-center justify-between py-1 text-slate-600 gap-2">
             <span className="flex items-center gap-1.5 text-slate-500 shrink-0">
               <Calendar className="w-3.5 h-3.5 shrink-0" /> Academic Year
@@ -99,6 +108,17 @@ export const PdfInfoPanel: React.FC<PdfInfoPanelProps> = ({
               </span>
               <span className="font-semibold text-slate-800 truncate text-right">
                 {resource.authorOrProfessor}
+              </span>
+            </div>
+          )}
+
+          {resource.storageProvider === 'google_drive' && (
+            <div className="flex items-center justify-between py-1 text-slate-600 gap-2">
+              <span className="flex items-center gap-1.5 text-slate-500 shrink-0">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> Source
+              </span>
+              <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-[11px]">
+                Google Drive
               </span>
             </div>
           )}

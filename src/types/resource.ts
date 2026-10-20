@@ -20,4 +20,8 @@ export interface Resource {
   displayOrder?: number;
   createdAt?: string;
   downloadsCount?: number;
+  storageProvider?: 'supabase' | 'google_drive';
+  driveFileId?: string;
+  driveViewUrl?: string;
 }
+
